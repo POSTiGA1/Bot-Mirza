@@ -119,7 +119,6 @@ if (!is_array($admin_ids)) {
     $admin_ids = [];
 }
 $helpdata = select("help", "*");
-$datatextbotget = select("textbot", "*", null, null, "fetchAll");
 $id_invoice = select("invoice", "id_invoice", null, null, "FETCH_COLUMN");
 $usernameinvoice = select("invoice", "username", null, null, "FETCH_COLUMN");
 $code_Discount = select("Discount", "code", null, null, "FETCH_COLUMN");
@@ -129,8 +128,8 @@ $SellDiscount = select("DiscountSell", "codeDiscount", null, null, "FETCH_COLUMN
 $channels_id = select("channels", "link", null, null, "FETCH_COLUMN");
 $pricepayment = select("Payment_report", "price", null, null, "FETCH_COLUMN");
 $listcard = select("card_number", "cardnumber", null, null, "FETCH_COLUMN");
-$datatxtbot = array();
 $topic_id = select("topicid", "*", null, null, "fetchAll");
+$datatextbot = $pdo->query("SELECT id_text, text FROM textbot")->fetchAll(PDO::FETCH_KEY_PAIR);
 $statusnote = false;
 foreach ($topic_id as $topic) {
     if ($topic['report'] == "reportnight")
@@ -157,100 +156,6 @@ if ($setting['statusnamecustom'] == 'onnamecustom')
     $statusnote = true;
 if ($setting['statusnoteforf'] == "0" && $user['agent'] == "f")
     $statusnote = false;
-function createForumTopicIfMissing($currentId, $reportKey, $topicName, $channelId)
-{
-        $numericId = intval($currentId);
-        if ($numericId !== 0) {
-            return;
-        }
-
-        $channelId = trim((string)$channelId);
-        if ($channelId === '' || $channelId === '0') {
-            return;
-        }
-
-        $response = telegram('createForumTopic', [
-            'chat_id' => $channelId,
-            'name' => $topicName
-        ]);
-
-        if (!is_array($response) || empty($response['ok'])) {
-            $context = is_array($response) ? json_encode($response) : 'empty response';
-            error_log("Failed to create forum topic {$reportKey}: {$context}");
-
-            if (is_array($response) && isset($response['error_code']) && in_array($response['error_code'], [400, 403], true)) {
-                update("topicid", "idreport", -1, "report", $reportKey);
-            }
-
-            return;
-        }
-
-        $threadId = $response['result']['message_thread_id'] ?? null;
-        if ($threadId !== null) {
-            update("topicid", "idreport", $threadId, "report", $reportKey);
-        }
-    }
-
-//createForumTopicIfMissing($porsantreport, 'porsantreport', $textbotlang['Admin']['affiliates']['titletopic'], $setting['Channel_Report']);
-//createForumTopicIfMissing($reportnight, 'reportnight', $textbotlang['Admin']['report']['reportnight'], $setting['Channel_Report']);
-//createForumTopicIfMissing($reportcron, 'reportcron', $textbotlang['Admin']['report']['reportcron'], $setting['Channel_Report']);
-//createForumTopicIfMissing($reportbackup, 'backupfile', "🤖 بکاپ ربات نماینده", $setting['Channel_Report']);
-foreach ($datatextbotget as $row) {
-    $datatxtbot[] = array(
-        'id_text' => $row['id_text'],
-        'text' => $row['text']
-    );
-}
-$datatextbot = array(
-    'text_usertest' => '',
-    'text_Purchased_services' => '',
-    'text_support' => '',
-    'text_help' => '',
-    'text_start' => '',
-    'text_bot_off' => '',
-    'text_dec_info' => '',
-    'text_roll' => '',
-    'text_fq' => '',
-    'text_dec_fq' => '',
-    'text_sell' => '',
-    'text_Add_Balance' => '',
-    'text_channel' => '',
-    'text_Tariff_list' => '',
-    'text_dec_Tariff_list' => '',
-    'text_affiliates' => '',
-    'text_pishinvoice' => '',
-    'accountwallet' => '',
-    'textafterpay' => '',
-    'textaftertext' => '',
-    'textmanual' => '',
-    'textselectlocation' => '',
-    'crontest' => '',
-    'textrequestagent' => '',
-    'textpanelagent' => '',
-    'text_wheel_luck' => '',
-    'text_cart' => '',
-    'text_cart_auto' => '',
-    'textafterpayibsng' => '',
-    'text_request_agent_dec' => '',
-    'carttocart' => '',
-    'textnowpayment' => '',
-    'textnowpaymenttron' => '',
-    'iranpay1' => '',
-    'iranpay2' => '',
-    'iranpay3' => '',
-    'aqayepardakht' => '',
-    'zarinpal' => '',
-    'textpaymentnotverify' => "",
-    'text_star_telegram' => '',
-    'text_extend' => '',
-    'text_wgdashboard' => '',
-    'text_Discount' => '',
-);
-foreach ($datatxtbot as $item) {
-    if (isset($datatextbot[$item['id_text']])) {
-        $datatextbot[$item['id_text']] = $item['text'];
-    }
-}
 $time_Start = jdate('Y/m/d');
 $date_start = jdate('H:i:s', time());
 $time_string = "📆 $date_start → ⏰ $time_Start";
@@ -1313,53 +1218,53 @@ $textconnect
     }
     $subscriptionurl = $DataUserOut['subscription_url'];
     if ($marzban_list_get['type'] == "WGDashboard") {
-    $textsub = "فایل اشتراک شما";
-    $bakinfos = json_encode([
-        'inline_keyboard' => [
-            [
-                ['text' => $textbotlang['users']['stateus']['backinfo'], 'callback_data' => "productcheckdata"],
+        $textsub = "فایل اشتراک شما";
+        $bakinfos = json_encode([
+            'inline_keyboard' => [
+                [
+                    ['text' => $textbotlang['users']['stateus']['backinfo'], 'callback_data' => "productcheckdata"],
+                ]
             ]
-        ]
-    ]);
-    update("user", "Processing_value", $nameloc['username'], "id", $from_id);
-    $subscriptionurl = $DataUserOut['subscription_url'];
-    $urlimage = "{$marzban_list_get['inboundid']}_{$nameloc['username']}.conf";
-    file_put_contents($urlimage, $subscriptionurl);
-    telegram('senddocument', [
-        'chat_id' => $from_id,
-        'document' => new CURLFile($urlimage),
-        'reply_markup' => $bakinfos,
-        'caption' => $textsub,
-        'parse_mode' => "HTML",
-    ]);
-    unlink($urlimage);
+        ]);
+        update("user", "Processing_value", $nameloc['username'], "id", $from_id);
+        $subscriptionurl = $DataUserOut['subscription_url'];
+        $urlimage = "{$marzban_list_get['inboundid']}_{$nameloc['username']}.conf";
+        file_put_contents($urlimage, $subscriptionurl);
+        telegram('senddocument', [
+            'chat_id' => $from_id,
+            'document' => new CURLFile($urlimage),
+            'reply_markup' => $bakinfos,
+            'caption' => $textsub,
+            'parse_mode' => "HTML",
+        ]);
+        unlink($urlimage);
     } else {
-    $textsub = "
+        $textsub = "
 {$textbotlang['users']['stateus']['linksub']}
            
 <code>$subscriptionurl</code>";
-    $bakinfos = json_encode([
-        'inline_keyboard' => [
-            [
-                ['text' => $textbotlang['users']['stateus']['backinfo'], 'callback_data' => "productcheckdata"],
+        $bakinfos = json_encode([
+            'inline_keyboard' => [
+                [
+                    ['text' => $textbotlang['users']['stateus']['backinfo'], 'callback_data' => "productcheckdata"],
+                ]
             ]
-        ]
-    ]);
-    update("user", "Processing_value", $nameloc['username'], "id", $from_id);
-    $subscriptionurl = $DataUserOut['subscription_url'];
-    $randomString = bin2hex(random_bytes(3));
-    $urlimage = "$from_id$randomString.png";
-    $qrCode = createqrcode($subscriptionurl);
-    file_put_contents($urlimage, $qrCode->getString());
-    addBackgroundImage($urlimage, $qrCode, 'images.jpg');
-    telegram('sendphoto', [
-        'chat_id' => $from_id,
-        'photo' => new CURLFile($urlimage),
-        'reply_markup' => $bakinfos,
-        'caption' => $textsub,
-        'parse_mode' => "HTML",
-    ]);
-    unlink($urlimage);
+        ]);
+        update("user", "Processing_value", $nameloc['username'], "id", $from_id);
+        $subscriptionurl = $DataUserOut['subscription_url'];
+        $randomString = bin2hex(random_bytes(3));
+        $urlimage = "$from_id$randomString.png";
+        $qrCode = createqrcode($subscriptionurl);
+        file_put_contents($urlimage, $qrCode->getString());
+        addBackgroundImage($urlimage, $qrCode, 'images.jpg');
+        telegram('sendphoto', [
+            'chat_id' => $from_id,
+            'photo' => new CURLFile($urlimage),
+            'reply_markup' => $bakinfos,
+            'caption' => $textsub,
+            'parse_mode' => "HTML",
+        ]);
+        unlink($urlimage);
     }
 } elseif (preg_match('/removeauto-(\w+)/', $datain, $dataget)) {
     $id_invoice = $dataget[1];
@@ -2048,7 +1953,7 @@ $textconnect
     $type = "extend_user";
     $status = "paid";
     $extend_json = json_encode($extend);
-    $stmt->bind_param("ssssssss", $from_id, $nameloc['username'], $value, $type, $dateacc, $prodcut['price_product'],$extend_json, $status);
+    $stmt->bind_param("ssssssss", $from_id, $nameloc['username'], $value, $type, $dateacc, $prodcut['price_product'], $extend_json, $status);
     $stmt->execute();
     $stmt->close();
     update("invoice", "Status", "active", "id_invoice", $id_invoice);
@@ -4642,7 +4547,7 @@ $textonebuy
         sendmessage($from_id, "❌ این بخش در حال غیرفعال می باشد", null, 'HTML');
         return;
     }
-    $PaySetting = mysqli_fetch_assoc(mysqli_query($connect, "SELECT * FROM shopSetting WHERE Namevalue = 'minbalancebuybulk'"))['value'];
+    $PaySetting = select("PaySetting", "*", "NamePay", "minbalancebuybulk", "select")['ValuePay'];
     if ($user['Balance'] < $PaySetting) {
         sendmessage($from_id, "❌ برای خرید انبوه باید حداقل $PaySetting تومان موجودی داشته باشید.", null, 'HTML');
         return;
@@ -5864,7 +5769,7 @@ $textonebuy
                 sendvideo($from_id, $data['videoid'], null);
             }
         }
-        $message_id =sendmessage($from_id, $textnowpayments, $paymentkeyboard, 'HTML');
+        $message_id = sendmessage($from_id, $textnowpayments, $paymentkeyboard, 'HTML');
         updatePaymentMessageId($message_id, $randomString);
     } elseif ($datain == "startelegrams") {
         $rates = rate_arze(['USD', 'Ton']);
@@ -6972,7 +6877,7 @@ $text_porsant
             'chat_id' => $from_id,
             'emoji' => "🎲",
         ]);
-        sleep((int)4.5);
+        sleep((int) 4.5);
     } else {
         $diceResponse = telegram('sendDice', [
             'chat_id' => $from_id,
@@ -7324,7 +7229,7 @@ if (isset($update['message']['successful_payment'])) {
         ]);
     }
     update("Payment_report", "payment_Status", "paid", "id_order", $Payment_report['id_order']);
-}elseif (preg_match('/extends_(\w+)_(.*)/', $datain, $dataget)) {
+} elseif (preg_match('/extends_(\w+)_(.*)/', $datain, $dataget)) {
     $username = $dataget[1];
     $location = select("marzban_panel", "*", "code_panel", $user['Processing_value_four'], "select");
     if ($location == false) {
