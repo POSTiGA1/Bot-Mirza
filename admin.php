@@ -3529,7 +3529,6 @@ $caption";
     $typeagent = $dataget[1];
     update("user", "Processing_value_tow", $typeagent, "id", $from_id);
     $product = [];
-    $escapedText = mysqli_real_escape_string($connect, $user['Processing_value_one']);
     $panel = select("marzban_panel", "*", "code_panel", $user['Processing_value_one'], "select");
     $getdataproduct = mysqli_query($connect, "SELECT * FROM product WHERE (Location = '{$panel['name_panel']}' or Location = '/all') AND agent = '$typeagent'");
     $list_product = [
@@ -5470,7 +5469,7 @@ $iduser  در ربات  رفع مسدود گردید
     sendmessage($from_id, $textbotlang['Admin']['phone']['active'], $keyboardadmin, 'HTML');
 } elseif (preg_match('/viewpaymentuser_(\w+)/', $datain, $dataget)) {
     $iduser = $dataget[1];
-    $PaymentUsers = mysqli_query($connect, "SELECT * FROM Payment_report WHERE id_user = '$iduser'");
+    $PaymentUsers = select("Payment_report", "*", "id_user", $iduser, "fetchAll");
     foreach ($PaymentUsers as $paymentUser) {
         $text_order = "🛒 شماره پرداخت  :  <code>{$paymentUser['id_order']}</code>
 🙍‍♂️ شناسه کاربر : <code>{$paymentUser['id_user']}</code>
