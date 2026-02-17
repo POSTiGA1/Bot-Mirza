@@ -4302,7 +4302,7 @@ $text_expie_agent
             $text_marzban = "❌ نام کاربری یا رمز عبور پنل اشتباه است";
             sendmessage($from_id, $text_marzban, $optionX_ui_single, 'HTML');
         } else {
-            $text_marzban = $textbotlang['Admin']['managepanel']['errorstateuspanel'] . "علت خطا {$x_ui_check_connect['errror']}";
+            $text_marzban = $textbotlang['Admin']['managepanel']['errorstateuspanel'] . "علت خطا: \n{$x_ui_check_connect['msg']}";
             sendmessage($from_id, $text_marzban, $optionX_ui_single, 'HTML');
         }
     } elseif ($marzban_list_get['type'] == "alireza_single") {
