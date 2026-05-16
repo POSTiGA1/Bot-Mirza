@@ -6955,24 +6955,15 @@ if ($datain == "settimecornremove" && $adminrulecheck['rule'] == "administrator"
     $admin_select = select("admin", "*", "id_admin", $from_id, "select");
     $randomString = bin2hex(random_bytes(6));
     update("admin", "username", $from_id, "id_admin", $from_id);
-    if ($admin_select['password'] == null) {
-        update("admin", "password", $randomString, "id_admin", $from_id);
-    } else {
-        $randomString = $admin_select['password'];
-    }
-    $keyboardstatistics = json_encode([
-        'inline_keyboard' => [
-            [
-                ['text' => "تنظیم آیپی ورود", 'callback_data' => 'iploginset'],
-            ],
-        ]
-    ]);
+    update("admin", "password", password_hash($randomString, PASSWORD_BCRYPT, ['cost' => 12]), "id_admin", $from_id);
     sendmessage($from_id, "✅  پنل تحت وب شما با موفقیت فعال گردید.
 
 
 🔗آدرس ورود : https://$domainhosts/panel
 👤نام کاربری :  <code>$from_id</code>
-🔑رمز عبور :  <code>$randomString</code>", $keyboardstatistics, 'HTML');
+🔑رمز عبور :  <code>$randomString</code>
+
+⚠️ در صورت کلیک مجدد دکمه فعالسازی پنل رمز جدید دریافت خواهید کرد.", null, 'HTML');
 } elseif (preg_match('/addordermanualـ(\w+)/', $datain, $dataget)) {
     $iduser = $dataget[1];
     update("user", "Processing_value", $iduser, "id", $from_id);
@@ -9888,13 +9879,6 @@ elseif ($text == "🫣 مخفی کردن پنل برای یک کاربر" && $ad
     $stmt->execute();
     sendmessage($from_id, "✅محصول بروزرسانی شد", $shopkeyboard, 'HTML');
     step('home', $from_id);
-} elseif ($datain == "iploginset") {
-    sendmessage($from_id, "📌 جهت ورود به پنل تحت وب نیاز است حتما یک آیپی ثابت ثبت کنید تا ورود را با آن آیپی انجام دهید  لطفا آیپی خود را ارسال نمایید", $shopkeyboard, 'HTML');
-    step("getiplogin", $from_id);
-} elseif ($user['step'] == "getiplogin") {
-    update("setting", "iplogin", $text, null, null);
-    step("home", $from_id);
-    sendmessage($from_id, "✅ آیپی با موفقیت تنظیم شد", $shopkeyboard, 'HTML');
 } elseif (preg_match('/extendadmin_(\w+)/', $datain, $dataget) || strpos($text, "/extend ") !== false) {
     if ($text[0] == "/") {
         $usernameconfig = explode(" ", $text)[1];

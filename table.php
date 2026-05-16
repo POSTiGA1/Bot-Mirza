@@ -174,7 +174,6 @@ try {
         daywarn varchar(45)  NULL,
         categoryhelp varchar(45)  NULL,
         linkappstatus varchar(45)  NULL,
-        iplogin varchar(45)  NULL,
         wheelagent varchar(45)  NULL,
         Lotteryagent varchar(45)  NULL,
         languageen varchar(45)  NULL,
@@ -214,7 +213,6 @@ try {
         addFieldToTable("setting", "categoryhelp", "0", "varchar(45)");
         addFieldToTable("setting", "daywarn", "2", "varchar(45)");
         addFieldToTable("setting", "btn_status_extned", "0", "varchar(45)");
-        addFieldToTable("setting", "iplogin", "0", "varchar(45)");
         addFieldToTable("setting", "wheelـluck_price", "0", "varchar(45)");
         addFieldToTable("setting", "wheelـluck", "0", "varchar(45)");
         addFieldToTable("setting", "Lottery_prize", $DATAAWARD, "TEXT");
