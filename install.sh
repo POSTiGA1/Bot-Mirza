@@ -122,6 +122,7 @@ function self_update_script() {
     curl -fsSL --max-time 15 -o "$TEMP_FILE" "$URL" 2>/dev/null \
         || wget -q -O "$TEMP_FILE" "$URL" 2>/dev/null
 
+    # Normalize line endings so a CRLF download can never break bash
     [ -f "$TEMP_FILE" ] && sed -i 's/\r$//' "$TEMP_FILE"
 
     # Validate the download is a complete, valid bash script (not a 404/HTML/partial)
@@ -1270,9 +1271,14 @@ function update_bot() {
         }
     fi
     if [ -f "$BOT_DIR/install.sh" ]; then
-        sudo cp "$BOT_DIR/install.sh" /root/install.sh
-        sudo sed -i 's/\r$//' /root/install.sh
-        echo -e "\n\e[92mCopied latest install.sh to /root/install.sh.\033[0m"
+        sed -i 's/\r$//' "$BOT_DIR/install.sh"
+        if bash -n "$BOT_DIR/install.sh" 2>/dev/null; then
+            sudo cp "$BOT_DIR/install.sh" /root/install.sh
+            sudo sed -i 's/\r$//' /root/install.sh
+            echo -e "\n\e[92mCopied latest install.sh to /root/install.sh.\033[0m"
+        else
+            echo -e "\n\e[91mWarning: downloaded install.sh failed syntax check; keeping the existing /root/install.sh.\033[0m"
+        fi
     else
         echo -e "\n\e[91mWarning: install.sh not found in update files.\033[0m"
     fi
