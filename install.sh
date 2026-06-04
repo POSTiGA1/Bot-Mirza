@@ -122,6 +122,8 @@ function self_update_script() {
     curl -fsSL --max-time 15 -o "$TEMP_FILE" "$URL" 2>/dev/null \
         || wget -q -O "$TEMP_FILE" "$URL" 2>/dev/null
 
+    [ -f "$TEMP_FILE" ] && sed -i 's/\r$//' "$TEMP_FILE"
+
     # Validate the download is a complete, valid bash script (not a 404/HTML/partial)
     local valid=0
     if [ -s "$TEMP_FILE" ] \
@@ -1269,6 +1271,7 @@ function update_bot() {
     fi
     if [ -f "$BOT_DIR/install.sh" ]; then
         sudo cp "$BOT_DIR/install.sh" /root/install.sh
+        sudo sed -i 's/\r$//' /root/install.sh
         echo -e "\n\e[92mCopied latest install.sh to /root/install.sh.\033[0m"
     else
         echo -e "\n\e[91mWarning: install.sh not found in update files.\033[0m"
@@ -1636,8 +1639,10 @@ EOF
          "https://api.telegram.org/bot${OLD_API_KEY}/setWebhook"
     sleep 2
     curl -k "https://${DOMAIN_NAME}/table.php" > /dev/null 2>&1
-    cp /root/install.sh /usr/local/bin/mirza
-    chmod +x /usr/local/bin/mirza
+    sed -i 's/\r$//' /root/install.sh
+    chmod +x /root/install.sh
+    rm -f /usr/local/bin/mirza
+    ln -sf /root/install.sh /usr/local/bin/mirza
     clear
     echo -e "\033[32m====================================================\033[0m"
     echo -e "\033[32m       MIGRATION SUCCESSFUL (Free -> Pro)           \033[0m"
