@@ -494,7 +494,7 @@ if ($text == "📞 تنظیم نام کاربری پشتیبانی") {
     $Bot_Status = json_encode([
         'inline_keyboard' => [
             [
-                ['text' => $textbotlang['Admin']['Status']['statussubject'], 'callback_data' => "subjectde"],
+                ['text' => $textbotlang['Admin']['Status']['statusSubject'], 'callback_data' => "subjectde"],
                 ['text' => $textbotlang['Admin']['Status']['subject'], 'callback_data' => "subject"],
             ],
             [
