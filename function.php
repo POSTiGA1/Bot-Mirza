@@ -164,36 +164,26 @@ function ensureTableUtf8mb4($table)
 
 function ensureCardNumberTableSupportsUnicode()
 {
-    global $connect;
+    global $pdo;
 
-    if (!isset($connect) || !($connect instanceof mysqli)) {
+    if (!isset($pdo) || !($pdo instanceof PDO)) {
         return;
     }
 
     try {
-        if (method_exists($connect, 'character_set_name') && $connect->character_set_name() !== 'utf8mb4') {
-            if (!$connect->set_charset('utf8mb4')) {
-                error_log('Failed to enforce utf8mb4 charset on mysqli connection: ' . $connect->error);
-            }
-        }
-
-        if (!$connect->query("SET NAMES 'utf8mb4' COLLATE 'utf8mb4_unicode_ci'")) {
-            error_log('Failed to execute SET NAMES utf8mb4 for card_number table: ' . $connect->error);
-        }
+        $pdo->exec("SET NAMES 'utf8mb4' COLLATE 'utf8mb4_unicode_ci'");
 
         $createQuery = "CREATE TABLE IF NOT EXISTS card_number (" .
             "cardnumber varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci PRIMARY KEY," .
             "namecard varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL" .
             ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
-        if (!$connect->query($createQuery)) {
-            error_log('Failed to create card_number table with utf8mb4 charset: ' . $connect->error);
-        }
+        $pdo->exec($createQuery);
 
         ensureTableUtf8mb4('card_number');
 
-        $columnInfo = $connect->query("SHOW FULL COLUMNS FROM card_number WHERE Field IN ('cardnumber', 'namecard')");
-        if ($columnInfo instanceof mysqli_result) {
-            while ($column = $columnInfo->fetch_assoc()) {
+        $columnInfo = $pdo->query("SHOW FULL COLUMNS FROM card_number WHERE Field IN ('cardnumber', 'namecard')");
+        if ($columnInfo instanceof PDOStatement) {
+            while ($column = $columnInfo->fetch(PDO::FETCH_ASSOC)) {
                 $collation = $column['Collation'] ?? '';
                 if (!is_string($collation) || stripos($collation, 'utf8mb4') === false) {
                     $field = $column['Field'];
@@ -204,14 +194,9 @@ function ensureCardNumberTableSupportsUnicode()
                         $type,
                         $field === 'cardnumber' ? ' PRIMARY KEY' : ' NOT NULL'
                     );
-                    if (!$connect->query($alter)) {
-                        error_log('Failed to update card_number column collation: ' . $connect->error);
-                    }
+                    $pdo->exec($alter);
                 }
             }
-            $columnInfo->free();
-        } else {
-            error_log('Unable to inspect card_number column collations: ' . $connect->error);
         }
     } catch (\Throwable $e) {
         error_log('Unexpected error while ensuring card_number utf8mb4 compatibility: ' . $e->getMessage());

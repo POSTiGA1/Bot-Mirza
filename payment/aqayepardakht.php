@@ -53,7 +53,7 @@ if ($result->code == "1") {
     $textbotlang = languagechange();
     DirectPayment($invoice_id,"../images.jpg");
     $pricecashback = select("PaySetting", "ValuePay", "NamePay", "chashbackaqaypardokht","select")['ValuePay'];
-    $Balance_id = mysqli_fetch_assoc(mysqli_query($connect, "SELECT * FROM user WHERE id = '{$Payment_report['id_user']}' LIMIT 1"));
+    $Balance_id = ($pdo->query("SELECT * FROM user WHERE id = '{$Payment_report['id_user']}' LIMIT 1"))->fetch(PDO::FETCH_ASSOC);
     if($pricecashback != "0"){
         $result = ($Payment_report['price'] * $pricecashback) / 100;
         $Balance_confrim = intval($Balance_id['Balance']) +$result;

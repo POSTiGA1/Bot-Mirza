@@ -237,12 +237,10 @@ if (strpos($text, "/start ") !== false && $user['step'] != "gettextSystemMessage
             sendmessage($affiliatesid, sprintf($textbotlang['hardcoded']['affiliateNewReferralJoined'], $username), $keyboard, 'html');
             $addcountaffiliates = intval($useraffiliates['affiliatescount']) + 1;
             update("user", "affiliatescount", $addcountaffiliates, "id", $affiliatesid);
-            $stmt = $connect->prepare("INSERT IGNORE INTO reagent_report (user_id, get_gift,time,reagent) VALUES (?, ?,?, ?)");
+            $stmt = $pdo->prepare("INSERT IGNORE INTO reagent_report (user_id, get_gift,time,reagent) VALUES (?, ?,?, ?)");
             $dateacc = date('Y/m/d H:i:s');
             $type_gift = false;
-            $stmt->bind_param("ssss", $from_id, $type_gift, $dateacc, $affiliatesid);
-            $stmt->execute();
-            $stmt->close();
+            $stmt->execute([$from_id, $type_gift, $dateacc, $affiliatesid]);
         } else {
             sendmessage($from_id, $textbotlang['users']['text_start'], $keyboard, 'html');
             update("user", "Processing_value", "0", "id", $from_id);
@@ -1754,7 +1752,7 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
             update("user", "Processing_value", $Balance_prim, "id", $from_id);
             sendmessage($from_id, $textbotlang['users']['sell']['noCredit'], $step_payment, 'HTML');
             step('get_step_payment', $from_id);
-            $stmt = $connect->prepare("INSERT IGNORE INTO service_other (id_user, username,value,type,time,price,output,status) VALUES (?, ?,?, ?, ?,?,?,?)");
+            $stmt = $pdo->prepare("INSERT IGNORE INTO service_other (id_user, username,value,type,time,price,output,status) VALUES (?, ?,?, ?, ?,?,?,?)");
             $dateacc = date('Y/m/d H:i:s');
             $value = json_encode(array(
                 "volumebuy" => $prodcut['Volume_constraint'],
@@ -1767,9 +1765,7 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
             $type = "extend_user";
             $status = "unpaid";
             $extend = '';
-            $stmt->bind_param("ssssssss", $from_id, $nameloc['username'], $value, $type, $dateacc, $prodcut['price_product'], $extend, $status);
-            $stmt->execute();
-            $stmt->close();
+            $stmt->execute([$from_id, $nameloc['username'], $value, $type, $dateacc, $prodcut['price_product'], $extend, $status]);
             update("user", "Processing_value_one", "{$nameloc['username']}%$randomString", "id", $from_id);
             update("user", "Processing_value_tow", "getextenduser", "id", $from_id);
             return;
@@ -1780,9 +1776,8 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
         if ($SellDiscountlimit != false) {
             $value = intval($SellDiscountlimit['usedDiscount']) + 1;
             update("DiscountSell", "usedDiscount", $value, "codeDiscount", $partsdic[1]);
-            $stmt = $connect->prepare("INSERT INTO Giftcodeconsumed (id_user,code) VALUES (?,?)");
-            $stmt->bind_param("ss", $from_id, $partsdic[1]);
-            $stmt->execute();
+            $stmt = $pdo->prepare("INSERT INTO Giftcodeconsumed (id_user,code) VALUES (?,?)");
+            $stmt->execute([$from_id, $partsdic[1]]);
             $text_report = strtr($textbotlang['extracted']['index_php']['discountCodeUsedNoticeRenew'], ['{username}' => $username, '{from_id}' => $from_id, '{discount_code}' => $partsdic[1]]);
             if (strlen($setting['Channel_Report']) > 0) {
                 telegram('sendmessage', [
@@ -1831,7 +1826,7 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
     }
     $Balance_Low_user = $user['Balance'] - $pricelastextend;
     update("user", "Balance", $Balance_Low_user, "id", $from_id);
-    $stmt = $connect->prepare("INSERT IGNORE INTO service_other (id_user, username,value,type,time,price,output,status) VALUES (?, ?, ?, ?,?,?,?,?)");
+    $stmt = $pdo->prepare("INSERT IGNORE INTO service_other (id_user, username,value,type,time,price,output,status) VALUES (?, ?, ?, ?,?,?,?,?)");
     $dateacc = date('Y/m/d H:i:s');
     $value = json_encode(array(
         "volumebuy" => $prodcut['Volume_constraint'],
@@ -1844,9 +1839,7 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
     $type = "extend_user";
     $status = "paid";
     $extend_json = json_encode($extend);
-    $stmt->bind_param("ssssssss", $from_id, $nameloc['username'], $value, $type, $dateacc, $prodcut['price_product'], $extend_json, $status);
-    $stmt->execute();
-    $stmt->close();
+    $stmt->execute([$from_id, $nameloc['username'], $value, $type, $dateacc, $prodcut['price_product'], $extend_json, $status]);
     update("invoice", "Status", "active", "id_invoice", $id_invoice);
     if (intval($setting['scorestatus']) == 1 and !in_array($from_id, $admin_ids)) {
         sendmessage($from_id, $textbotlang['extracted']['index_php']['earned2Points'], null, 'html');
@@ -2266,12 +2259,10 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
         "expire" => $DataUserOut['expire'],
         "stateus" => $DataUserOut['status']
     ));
-    $stmt = $connect->prepare("INSERT IGNORE INTO service_other (id_user, username,value,type,time,price) VALUES (?, ?, ?, ?,?,?)");
+    $stmt = $pdo->prepare("INSERT IGNORE INTO service_other (id_user, username,value,type,time,price) VALUES (?, ?, ?, ?,?,?)");
     $dateacc = date('Y/m/d H:i:s');
     $type = "change_location";
-    $stmt->bind_param("ssssss", $from_id, $nameloc['username'], $value, $type, $dateacc, $prodcut['price_product']);
-    $stmt->execute();
-    $stmt->close();
+    $stmt->execute([$from_id, $nameloc['username'], $value, $type, $dateacc, $prodcut['price_product']]);
     if ($DataUserOut['data_limit'] == 0 || $DataUserOut['data_limit'] == null) {
         $data_limit = 0;
     } else {
@@ -2696,12 +2687,10 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
     $id_invoice = $dataget[1];
     $nameloc = select("invoice", "*", "id_invoice", $id_invoice, "select");
     $marzban_list_get = select("marzban_panel", "*", "name_panel", $nameloc['Service_location'], "select");
-    $stmt = $connect->prepare("INSERT IGNORE INTO cancel_service (id_user, username,description,status) VALUES (?, ?, ?, ?)");
+    $stmt = $pdo->prepare("INSERT IGNORE INTO cancel_service (id_user, username,description,status) VALUES (?, ?, ?, ?)");
     $descriptions = "0";
     $Status = "waiting";
-    $stmt->bind_param("ssss", $from_id, $nameloc['username'], $descriptions, $Status);
-    $stmt->execute();
-    $stmt->close();
+    $stmt->execute([$from_id, $nameloc['username'], $descriptions, $Status]);
     $DataUserOut = $ManagePanel->DataUser($nameloc['Service_location'], $nameloc['username']);
     if (isset($DataUserOut['msg']) && $DataUserOut['msg'] == "User not found") {
         sendmessage($from_id, $textbotlang['users']['status']['userNotFound'], null, 'html');
@@ -2823,14 +2812,12 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
     Editmessagetext($from_id, $message_id, $textbotlang['Admin']['transfer']['confirmed'], $bakinfos);
     $texttransfer = strtr($textbotlang['extracted']['index_php']['serviceTransferredNotice'], ['{service_username}' => $nameloc['username'], '{from_id}' => $from_id]);
     sendmessage($user['Processing_value_one'], $texttransfer, $keyboard, 'HTML');
-    $stmt = $connect->prepare("INSERT IGNORE INTO service_other (id_user, username,value,type,time,price) VALUES (?, ?, ?, ?,?,?)");
+    $stmt = $pdo->prepare("INSERT IGNORE INTO service_other (id_user, username,value,type,time,price) VALUES (?, ?, ?, ?,?,?)");
     $value = $user['Processing_value_one'];
     $dateacc = date('Y/m/d H:i:s');
     $type = "transfertouser";
     $price = "0";
-    $stmt->bind_param("ssssss", $from_id, $nameloc['username'], $value, $type, $dateacc, $price);
-    $stmt->execute();
-    $stmt->close();
+    $stmt->execute([$from_id, $nameloc['username'], $value, $type, $dateacc, $price]);
 } elseif ($text == $textbotlang['textbot']['userTest'] || $datain == "usertestbtn" || $text == "usertest") {
     if (!check_active_btn($setting['keyboardmain'], "text_usertest")) {
         sendmessage($from_id, $textbotlang['extracted']['index_php']['testServiceUnavailable'], null, 'HTML');
@@ -2950,14 +2937,12 @@ if ($user['step'] == "createusertest" || preg_match('/locationtest_(.*)/', $data
         'volume' => false,
         'time' => false,
     ));
-    $stmt = $connect->prepare("INSERT IGNORE INTO invoice (id_user, id_invoice, username,time_sell, Service_location, name_product, price_product, Volume, Service_time,Status,notifctions) VALUES (?, ?,  ?, ?, ?, ?, ?,?,?,?,?)");
+    $stmt = $pdo->prepare("INSERT IGNORE INTO invoice (id_user, id_invoice, username,time_sell, Service_location, name_product, price_product, Volume, Service_time,Status,notifctions) VALUES (?, ?,  ?, ?, ?, ?, ?,?,?,?,?)");
     $Status = "active";
     $info_product['name_product'] = $textbotlang['hardcoded']['testServiceName5'];
     $info_product['price_product'] = "0";
     $Status = "active";
-    $stmt->bind_param("sssssssssss", $from_id, $randomString, $username_ac, $date, $marzban_list_get['name_panel'], $info_product['name_product'], $info_product['price_product'], $marzban_list_get['val_usertest'], $marzban_list_get['time_usertest'], $Status, $notifctions);
-    $stmt->execute();
-    $stmt->close();
+    $stmt->execute([$from_id, $randomString, $username_ac, $date, $marzban_list_get['name_panel'], $info_product['name_product'], $info_product['price_product'], $marzban_list_get['val_usertest'], $marzban_list_get['time_usertest'], $Status, $notifctions]);
     $dataoutput = $ManagePanel->createUser($marzban_list_get['name_panel'], "usertest", $username_ac, $datac);
     if ($dataoutput['username'] == null) {
         $dataoutput['msg'] = json_encode($dataoutput['msg']);
@@ -3344,8 +3329,8 @@ if ($user['step'] == "createusertest" || preg_match('/locationtest_(.*)/', $data
         sendmessage($from_id, $textbotlang['extracted']['index_php']['buttonDisabled'], null, 'HTML');
         return;
     }
-    $locationproduct = mysqli_query($connect, "SELECT * FROM marzban_panel  WHERE status = 'active' AND (agent = '{$user['agent']}' OR agent = 'all')");
-    if (mysqli_num_rows($locationproduct) == 0) {
+    $locationproduct = $pdo->query("SELECT * FROM marzban_panel  WHERE status = 'active' AND (agent = '{$user['agent']}' OR agent = 'all')");
+    if (($locationproduct)->rowCount() == 0) {
         sendmessage($from_id, $textbotlang['Admin']['managepanel']['nullPanel'], null, 'HTML');
         return;
     }
@@ -3356,8 +3341,8 @@ if ($user['step'] == "createusertest" || preg_match('/locationtest_(.*)/', $data
     if ($user['number'] == "none" && $setting['get_number'] == "onAuthenticationphone")
         return;
     #-----------------------#
-    if (mysqli_num_rows($locationproduct) == 1) {
-        $location = mysqli_fetch_assoc($locationproduct)['name_panel'];
+    if (($locationproduct)->rowCount() == 1) {
+        $location = ($locationproduct)->fetch(PDO::FETCH_ASSOC)['name_panel'];
         $locationproduct = select("marzban_panel", "*", "name_panel", $location, "select");
         if ($locationproduct['hide_user'] != null) {
             $list_user = json_decode($locationproduct['hide_user'], true);
@@ -3713,7 +3698,7 @@ if ($user['step'] == "createusertest" || preg_match('/locationtest_(.*)/', $data
         $info_product['Service_time'] = $parts[1];
         $info_product['price_product'] = ($parts[2] * $custompricevalue) + ($parts[1] * $customtimevalueprice);
     } else {
-        $info_product = mysqli_fetch_assoc(mysqli_query($connect, "SELECT * FROM product WHERE code_product = '$loc' AND (Location = '{$userdate['name_panel']}'or Location = '/all') LIMIT 1"));
+        $info_product = ($pdo->query("SELECT * FROM product WHERE code_product = '$loc' AND (Location = '{$userdate['name_panel']}'or Location = '/all') LIMIT 1"))->fetch(PDO::FETCH_ASSOC);
     }
     if (!isset($info_product['price_product'])) {
         sendmessage($from_id, $textbotlang['extracted']['index_php']['confirmError'], $keyboard, 'HTML');
@@ -3836,11 +3821,9 @@ if ($user['step'] == "createusertest" || preg_match('/locationtest_(.*)/', $data
         'volume' => false,
         'time' => false,
     ));
-    $stmt = $connect->prepare("INSERT IGNORE INTO invoice (id_user, id_invoice, username,time_sell, Service_location, name_product, price_product, Volume, Service_time,Status,note,refral,notifctions) VALUES (?,  ?, ?, ?, ?, ?, ?,?,?,?,?,?,?)");
+    $stmt = $pdo->prepare("INSERT IGNORE INTO invoice (id_user, id_invoice, username,time_sell, Service_location, name_product, price_product, Volume, Service_time,Status,note,refral,notifctions) VALUES (?,  ?, ?, ?, ?, ?, ?,?,?,?,?,?,?)");
     $Status = "unpaid";
-    $stmt->bind_param("sssssssssssss", $from_id, $randomString, $username_ac, $date, $marzban_list_get['name_panel'], $info_product['name_product'], $priceproduct, $info_product['Volume_constraint'], $info_product['Service_time'], $Status, $userdate['nameconfig'], $user['affiliates'], $notifctions);
-    $stmt->execute();
-    $stmt->close();
+    $stmt->execute([$from_id, $randomString, $username_ac, $date, $marzban_list_get['name_panel'], $info_product['name_product'], $priceproduct, $info_product['Volume_constraint'], $info_product['Service_time'], $Status, $userdate['nameconfig'], $user['affiliates'], $notifctions]);
     if ($priceproduct > $user['Balance'] && $user['agent'] != "n2" && intval($priceproduct) != 0) {
         $marzbandirectpay = select("shopSetting", "*", "Namevalue", "statusdirectpabuy", "select")['value'];
         $Balance_prim = $priceproduct - $user['Balance'];
@@ -3880,9 +3863,8 @@ if ($user['step'] == "createusertest" || preg_match('/locationtest_(.*)/', $data
         $SellDiscountlimit = select("DiscountSell", "*", "codeDiscount", $partsdic[0], "select");
         if ($SellDiscountlimit != false) {
             $value = intval($SellDiscountlimit['usedDiscount']) + 1;
-            $stmt = $connect->prepare("INSERT INTO Giftcodeconsumed (id_user,code) VALUES (?,?)");
-            $stmt->bind_param("ss", $from_id, $partsdic[0]);
-            $stmt->execute();
+            $stmt = $pdo->prepare("INSERT INTO Giftcodeconsumed (id_user,code) VALUES (?,?)");
+            $stmt->execute([$from_id, $partsdic[0]]);
             update("DiscountSell", "usedDiscount", $value, "codeDiscount", $partsdic[0]);
             $text_report = strtr($textbotlang['extracted']['index_php']['discountCodeUsedNotice'], ['{username}' => $username, '{from_id}' => $from_id, '{discount_code}' => $partsdic[0]]);
             if (strlen($setting['Channel_Report']) > 0) {
@@ -4123,8 +4105,8 @@ if ($user['step'] == "createusertest" || preg_match('/locationtest_(.*)/', $data
         return;
     }
     if ($SellDiscountlimit['usefirst'] == "1") {
-        $countinvoice = mysqli_query($connect, sprintf("SELECT * FROM invoice WHERE id_user = '%s' AND name_product != '{$textbotlang['Admin']['adminphp']['db_test_service_name']}' AND  (status = 'active' OR status = 'end_of_time'  OR status = 'end_of_volume' OR status = 'sendedwarn' OR Status = 'send_on_hold')", $from_id));
-        if (mysqli_num_rows($countinvoice) != 0) {
+        $countinvoice = $pdo->query(sprintf("SELECT * FROM invoice WHERE id_user = '%s' AND name_product != '{$textbotlang['Admin']['adminphp']['db_test_service_name']}' AND  (status = 'active' OR status = 'end_of_time'  OR status = 'end_of_volume' OR status = 'sendedwarn' OR Status = 'send_on_hold')", $from_id));
+        if (($countinvoice)->rowCount() != 0) {
             sendmessage($from_id, $textbotlang['users']['Discount']['firstdiscount'], null, 'HTML');
             return;
         }
@@ -4143,7 +4125,7 @@ if ($user['step'] == "createusertest" || preg_match('/locationtest_(.*)/', $data
         $info_product['Service_time'] = $parts[1];
         $info_product['price_product'] = ($parts[2] * $custompricevalue) + ($parts[1] * $customtimevalueprice);
     } else {
-        $info_product = mysqli_fetch_assoc(mysqli_query($connect, "SELECT * FROM product WHERE code_product = '{$user['Processing_value_one']}' AND (Location = '{$userdate['name_panel']}'or Location = '/all') LIMIT 1"));
+        $info_product = ($pdo->query("SELECT * FROM product WHERE code_product = '{$user['Processing_value_one']}' AND (Location = '{$userdate['name_panel']}'or Location = '/all') LIMIT 1"))->fetch(PDO::FETCH_ASSOC);
     }
     $result = ($SellDiscountlimit['price'] / 100) * $info_product['price_product'];
 
@@ -4176,8 +4158,8 @@ if ($user['step'] == "createusertest" || preg_match('/locationtest_(.*)/', $data
         sendmessage($from_id, strtr($textbotlang['extracted']['index_php']['bulkPurchaseMinBalance'], ['{PaySetting}' => $PaySetting]), null, 'HTML');
         return;
     }
-    $locationproduct = mysqli_query($connect, "SELECT * FROM marzban_panel");
-    if (mysqli_num_rows($locationproduct) == 0) {
+    $locationproduct = $pdo->query("SELECT * FROM marzban_panel");
+    if (($locationproduct)->rowCount() == 0) {
         sendmessage($from_id, $textbotlang['Admin']['managepanel']['nullPanel'], null, 'HTML');
         return;
     }
@@ -4332,7 +4314,7 @@ if ($user['step'] == "createusertest" || preg_match('/locationtest_(.*)/', $data
         $info_product['Service_time'] = $parts[1];
         $info_product['price_product'] = ($parts[2] * $custompricevalue) + ($parts[1] * $customtimevalueprice);
     } else {
-        $info_product = mysqli_fetch_assoc(mysqli_query($connect, "SELECT * FROM product WHERE code_product = '$loc' AND (Location = '{$user['Processing_value']}'or Location = '/all') LIMIT 1"));
+        $info_product = ($pdo->query("SELECT * FROM product WHERE code_product = '$loc' AND (Location = '{$user['Processing_value']}'or Location = '/all') LIMIT 1"))->fetch(PDO::FETCH_ASSOC);
     }
     $randomString = bin2hex(random_bytes(2));
     $username_ac = generateUsername($from_id, $marzban_list_get['MethodUsername'], $username, $randomString, $text, $marzban_list_get['namecustom'], $user['namecustom']);
@@ -4363,7 +4345,7 @@ if ($user['step'] == "createusertest" || preg_match('/locationtest_(.*)/', $data
         $info_product['price_product'] = ($parts[2] * $custompricevalue) + ($parts[1] * $customtimevalueprice);
         $info_product['data_limit_reset'] = "no_reset";
     } else {
-        $info_product = mysqli_fetch_assoc(mysqli_query($connect, "SELECT * FROM product WHERE code_product = '{$user['Processing_value_one']}' AND (Location = '{$user['Processing_value']}'  or Location = '/all') LIMIT 1"));
+        $info_product = ($pdo->query("SELECT * FROM product WHERE code_product = '{$user['Processing_value_one']}' AND (Location = '{$user['Processing_value']}'  or Location = '/all') LIMIT 1"))->fetch(PDO::FETCH_ASSOC);
     }
     if (empty($info_product['price_product']) || empty($info_product['price_product']))
         return;
@@ -4470,11 +4452,9 @@ if ($user['step'] == "createusertest" || preg_match('/locationtest_(.*)/', $data
             step('home', $from_id);
             return;
         }
-        $stmt = $connect->prepare("INSERT IGNORE INTO invoice (id_user, id_invoice, username,time_sell, Service_location, name_product, price_product, Volume, Service_time,Status,notifctions) VALUES (?, ?, ?, ?, ?, ?, ?,?,?,?,?)");
+        $stmt = $pdo->prepare("INSERT IGNORE INTO invoice (id_user, id_invoice, username,time_sell, Service_location, name_product, price_product, Volume, Service_time,Status,notifctions) VALUES (?, ?, ?, ?, ?, ?, ?,?,?,?,?)");
         $Status = "active";
-        $stmt->bind_param("sssssssssss", $from_id, $randomString, $username_acc, $date, $user['Processing_value'], $info_product['name_product'], $info_product['price_product'], $info_product['Volume_constraint'], $info_product['Service_time'], $Status, $notifctions);
-        $stmt->execute();
-        $stmt->close();
+        $stmt->execute([$from_id, $randomString, $username_acc, $date, $user['Processing_value'], $info_product['name_product'], $info_product['price_product'], $info_product['Volume_constraint'], $info_product['Service_time'], $Status, $notifctions]);
         $config = "";
         $output_config_link = $marzban_list_get['sublink'] == "onsublink" ? $dataoutput['subscription_url'] : "";
         if ($marzban_list_get['config'] == "onconfig") {
@@ -4567,8 +4547,8 @@ if ($user['step'] == "createusertest" || preg_match('/locationtest_(.*)/', $data
 } elseif ($user['step'] == "get_step_payment") {
     if ($datain == "cart_to_offline") {
         $PaySetting = select("PaySetting", "ValuePay", "NamePay", "statuscardautoconfirm", "select")['ValuePay'];
-        $checkpay = mysqli_query($connect, "SELECT * FROM Payment_report WHERE id = '$from_id' AND payment_Status = 'Unpaid'");
-        if (mysqli_num_rows($checkpay) != 0) {
+        $checkpay = $pdo->query("SELECT * FROM Payment_report WHERE id = '$from_id' AND payment_Status = 'Unpaid'");
+        if (($checkpay)->rowCount() != 0) {
             sendmessage($from_id, $textbotlang['Admin']['SettingPayment']['isSetPay'], null, 'HTML');
             return;
         }
@@ -4580,23 +4560,23 @@ if ($user['step'] == "createusertest" || preg_match('/locationtest_(.*)/', $data
             sendmessage($from_id, strtr($textbotlang['extracted']['index_php']['depositAmountRange'], ['{mainbalance}' => $mainbalance, '{maxbalance}' => $maxbalance]), null, 'HTML');
             return;
         }
-        $cardQuery = mysqli_query($connect, "SELECT * FROM card_number  ORDER BY RAND() LIMIT 1");
+        $cardQuery = $pdo->query("SELECT * FROM card_number  ORDER BY RAND() LIMIT 1");
         if ($cardQuery === false) {
-            error_log('Failed to fetch card_number data: ' . mysqli_error($connect));
+            error_log('Failed to fetch card_number data: ' . implode(' ', $pdo->errorInfo()));
             sendmessage($from_id, $textbotlang['extracted']['index_php']['bankCardRetrieveError'], null, 'HTML');
             return;
         }
 
-        $card_info = mysqli_fetch_assoc($cardQuery);
+        $card_info = ($cardQuery)->fetch(PDO::FETCH_ASSOC);
         if (!$card_info || empty($card_info['cardnumber']) || empty($card_info['namecard'])) {
             sendmessage($from_id, $textbotlang['extracted']['index_php']['noActiveBankCard'], null, 'HTML');
-            mysqli_free_result($cardQuery);
+            /* freed */ $cardQuery = null;
             return;
         }
 
         $card_number = $card_info['cardnumber'];
         $PaySettingname = $card_info['namecard'];
-        mysqli_free_result($cardQuery);
+        /* freed */ $cardQuery = null;
         $price_copy = $user['Processing_value'];
         if ($PaySetting == "onautoconfirm") {
             $random_number = rand(0, 2000);
@@ -4627,11 +4607,10 @@ if ($user['step'] == "createusertest" || preg_match('/locationtest_(.*)/', $data
         $invoice = "{$user['Processing_value_tow']}|{$user['Processing_value_one']}";
         $dateacc = date('Y/m/d H:i:s');
         $randomString = bin2hex(random_bytes(5));
-        $stmt = $connect->prepare("INSERT INTO Payment_report (id_user,id_order,time,price,payment_Status,Payment_Method,id_invoice) VALUES (?,?,?,?,?,?,?)");
+        $stmt = $pdo->prepare("INSERT INTO Payment_report (id_user,id_order,time,price,payment_Status,Payment_Method,id_invoice) VALUES (?,?,?,?,?,?,?)");
         $payment_Status = "Unpaid";
         $Payment_Method = "cart to cart";
-        $stmt->bind_param("sssssss", $from_id, $randomString, $dateacc, $user['Processing_value'], $payment_Status, $Payment_Method, $invoice);
-        $stmt->execute();
+        $stmt->execute([$from_id, $randomString, $dateacc, $user['Processing_value'], $payment_Status, $Payment_Method, $invoice]);
         deletemessage($from_id, $message_id);
         if ($setting['statuscopycart'] == "1") {
             $sendresidcart = json_encode([
@@ -4706,11 +4685,10 @@ if ($user['step'] == "createusertest" || preg_match('/locationtest_(.*)/', $data
             }
             return;
         }
-        $stmt = $connect->prepare("INSERT INTO Payment_report (id_user,id_order,time,price,payment_Status,Payment_Method,id_invoice) VALUES (?,?,?,?,?,?,?)");
+        $stmt = $pdo->prepare("INSERT INTO Payment_report (id_user,id_order,time,price,payment_Status,Payment_Method,id_invoice) VALUES (?,?,?,?,?,?,?)");
         $payment_Status = "Unpaid";
         $Payment_Method = "aqayepardakht";
-        $stmt->bind_param("sssssss", $from_id, $randomString, $dateacc, $user['Processing_value'], $payment_Status, $Payment_Method, $invoice);
-        $stmt->execute();
+        $stmt->execute([$from_id, $randomString, $dateacc, $user['Processing_value'], $payment_Status, $Payment_Method, $invoice]);
         $paymentkeyboard = json_encode([
             'inline_keyboard' => [
                 [
@@ -4767,11 +4745,10 @@ if ($user['step'] == "createusertest" || preg_match('/locationtest_(.*)/', $data
         }
         $invoice = "{$user['Processing_value_tow']}|{$user['Processing_value_one']}";
         $dateacc = date('Y/m/d H:i:s');
-        $stmt = $connect->prepare("INSERT INTO Payment_report (id_user,id_order,time,price,payment_Status,Payment_Method,id_invoice,dec_not_confirmed) VALUES (?,?,?,?,?,?,?,?)");
+        $stmt = $pdo->prepare("INSERT INTO Payment_report (id_user,id_order,time,price,payment_Status,Payment_Method,id_invoice,dec_not_confirmed) VALUES (?,?,?,?,?,?,?,?)");
         $payment_Status = "Unpaid";
         $Payment_Method = "zarinpal";
-        $stmt->bind_param("ssssssss", $from_id, $randomString, $dateacc, $user['Processing_value'], $payment_Status, $Payment_Method, $invoice, $pay['data']['authority']);
-        $stmt->execute();
+        $stmt->execute([$from_id, $randomString, $dateacc, $user['Processing_value'], $payment_Status, $Payment_Method, $invoice, $pay['data']['authority']]);
         $paymentkeyboard = json_encode([
             'inline_keyboard' => [
                 [
@@ -4823,11 +4800,10 @@ if ($user['step'] == "createusertest" || preg_match('/locationtest_(.*)/', $data
         $randomString = bin2hex(random_bytes(5));
         $invoice = "{$user['Processing_value_tow']}|{$user['Processing_value_one']}";
         $pay = plisio($randomString, $usdprice);
-        $stmt = $connect->prepare("INSERT INTO Payment_report (id_user,id_order,time,price,payment_Status,Payment_Method,id_invoice,dec_not_confirmed) VALUES (?,?,?,?,?,?,?,?)");
+        $stmt = $pdo->prepare("INSERT INTO Payment_report (id_user,id_order,time,price,payment_Status,Payment_Method,id_invoice,dec_not_confirmed) VALUES (?,?,?,?,?,?,?,?)");
         $payment_Status = "Unpaid";
         $Payment_Method = "plisio";
-        $stmt->bind_param("ssssssss", $from_id, $randomString, $dateacc, $user['Processing_value'], $payment_Status, $Payment_Method, $invoice, $pay['txn_id']);
-        $stmt->execute();
+        $stmt->execute([$from_id, $randomString, $dateacc, $user['Processing_value'], $payment_Status, $Payment_Method, $invoice, $pay['txn_id']]);
         if (isset($pay['message'])) {
             $text_error = $pay['message'];
             sendmessage($from_id, $textbotlang['users']['Balance']['errorLinkPayment'], $keyboard, 'HTML');
@@ -4891,11 +4867,10 @@ if ($user['step'] == "createusertest" || preg_match('/locationtest_(.*)/', $data
         $randomString = bin2hex(random_bytes(5));
         $invoice = "{$user['Processing_value_tow']}|{$user['Processing_value_one']}";
         $pay = nowPayments('invoice', $usdprice, $randomString, "order");
-        $stmt = $connect->prepare("INSERT INTO Payment_report (id_user,id_order,time,price,payment_Status,Payment_Method,id_invoice,dec_not_confirmed) VALUES (?,?,?,?,?,?,?,?)");
+        $stmt = $pdo->prepare("INSERT INTO Payment_report (id_user,id_order,time,price,payment_Status,Payment_Method,id_invoice,dec_not_confirmed) VALUES (?,?,?,?,?,?,?,?)");
         $payment_Status = "Unpaid";
         $Payment_Method = "nowpayment";
-        $stmt->bind_param("ssssssss", $from_id, $randomString, $dateacc, $user['Processing_value'], $payment_Status, $Payment_Method, $invoice, $pay['id']);
-        $stmt->execute();
+        $stmt->execute([$from_id, $randomString, $dateacc, $user['Processing_value'], $payment_Status, $Payment_Method, $invoice, $pay['id']]);
         if (!isset($pay['id'])) {
             $text_error = json_encode($pay);
             sendmessage($from_id, $textbotlang['users']['Balance']['errorLinkPayment'], $keyboard, 'HTML');
@@ -4958,11 +4933,10 @@ if ($user['step'] == "createusertest" || preg_match('/locationtest_(.*)/', $data
         $dateacc = date('Y/m/d H:i:s');
         $randomString = bin2hex(random_bytes(5));
         $invoice = "{$user['Processing_value_tow']}|{$user['Processing_value_one']}";
-        $stmt = $connect->prepare("INSERT INTO Payment_report (id_user,id_order,time,price,payment_Status,Payment_Method,id_invoice) VALUES (?,?,?,?,?,?,?)");
+        $stmt = $pdo->prepare("INSERT INTO Payment_report (id_user,id_order,time,price,payment_Status,Payment_Method,id_invoice) VALUES (?,?,?,?,?,?,?)");
         $payment_Status = "Unpaid";
         $Payment_Method = "Currency Rial 1";
-        $stmt->bind_param("sssssss", $from_id, $randomString, $dateacc, $user['Processing_value'], $payment_Status, $Payment_Method, $invoice);
-        $stmt->execute();
+        $stmt->execute([$from_id, $randomString, $dateacc, $user['Processing_value'], $payment_Status, $Payment_Method, $invoice]);
         $pay = createInvoiceiranpay1($user['Processing_value'], $randomString);
         if ($pay['status'] != "100") {
             $text_error = $pay['message'];
@@ -5026,11 +5000,10 @@ if ($user['step'] == "createusertest" || preg_match('/locationtest_(.*)/', $data
         $dateacc = date('Y/m/d H:i:s');
         $randomString = bin2hex(random_bytes(5));
         $invoice = "{$user['Processing_value_tow']}|{$user['Processing_value_one']}";
-        $stmt = $connect->prepare("INSERT INTO Payment_report (id_user,id_order,time,price,payment_Status,Payment_Method,id_invoice) VALUES (?,?,?,?,?,?,?)");
+        $stmt = $pdo->prepare("INSERT INTO Payment_report (id_user,id_order,time,price,payment_Status,Payment_Method,id_invoice) VALUES (?,?,?,?,?,?,?)");
         $payment_Status = "Unpaid";
         $Payment_Method = "Currency Rial 2";
-        $stmt->bind_param("sssssss", $from_id, $randomString, $dateacc, $user['Processing_value'], $payment_Status, $Payment_Method, $invoice);
-        $stmt->execute();
+        $stmt->execute([$from_id, $randomString, $dateacc, $user['Processing_value'], $payment_Status, $Payment_Method, $invoice]);
         $payment = trnado($randomString, $trxprice);
         if ($payment['IsSuccessful'] != "true") {
             $text_error = json_encode($payment);
@@ -5102,11 +5075,10 @@ if ($user['step'] == "createusertest" || preg_match('/locationtest_(.*)/', $data
         $dateacc = date('Y/m/d H:i:s');
         $randomString = bin2hex(random_bytes(5));
         $invoice = "{$user['Processing_value_tow']}|{$user['Processing_value_one']}";
-        $stmt = $connect->prepare("INSERT INTO Payment_report (id_user,id_order,time,price,payment_Status,Payment_Method,id_invoice) VALUES (?,?,?,?,?,?,?)");
+        $stmt = $pdo->prepare("INSERT INTO Payment_report (id_user,id_order,time,price,payment_Status,Payment_Method,id_invoice) VALUES (?,?,?,?,?,?,?)");
         $payment_Status = "Unpaid";
         $Payment_Method = "Currency Rial 3";
-        $stmt->bind_param("sssssss", $from_id, $randomString, $dateacc, $user['Processing_value'], $payment_Status, $Payment_Method, $invoice);
-        $stmt->execute();
+        $stmt->execute([$from_id, $randomString, $dateacc, $user['Processing_value'], $payment_Status, $Payment_Method, $invoice]);
         $paylink = createInvoice($trxprice);
         if (!$paylink['success']) {
             $text_error = $paylink['message'];
@@ -5175,11 +5147,10 @@ if ($user['step'] == "createusertest" || preg_match('/locationtest_(.*)/', $data
         $dateacc = date('Y/m/d H:i:s');
         $randomString = bin2hex(random_bytes(5));
         $invoice = "{$user['Processing_value_tow']}|{$user['Processing_value_one']}";
-        $stmt = $connect->prepare("INSERT INTO Payment_report (id_user,id_order,time,price,payment_Status,Payment_Method,id_invoice) VALUES (?,?,?,?,?,?,?)");
+        $stmt = $pdo->prepare("INSERT INTO Payment_report (id_user,id_order,time,price,payment_Status,Payment_Method,id_invoice) VALUES (?,?,?,?,?,?,?)");
         $payment_Status = "Unpaid";
         $Payment_Method = "arze digital offline";
-        $stmt->bind_param("sssssss", $from_id, $randomString, $dateacc, $user['Processing_value'], $payment_Status, $Payment_Method, $invoice);
-        $stmt->execute();
+        $stmt->execute([$from_id, $randomString, $dateacc, $user['Processing_value'], $payment_Status, $Payment_Method, $invoice]);
         $affilnecurrency = select("PaySetting", "*", "NamePay", "walletaddress", "select")['ValuePay'];
         $paymentkeyboard = json_encode([
             'inline_keyboard' => [
@@ -5228,11 +5199,10 @@ if ($user['step'] == "createusertest" || preg_match('/locationtest_(.*)/', $data
         $dateacc = date('Y/m/d H:i:s');
         $randomString = bin2hex(random_bytes(5));
         $invoice = "{$user['Processing_value_tow']}|{$user['Processing_value_one']}";
-        $stmt = $connect->prepare("INSERT INTO Payment_report (id_user,id_order,time,price,payment_Status,Payment_Method,id_invoice) VALUES (?,?,?,?,?,?,?)");
+        $stmt = $pdo->prepare("INSERT INTO Payment_report (id_user,id_order,time,price,payment_Status,Payment_Method,id_invoice) VALUES (?,?,?,?,?,?,?)");
         $payment_Status = "Unpaid";
         $Payment_Method = "Star Telegram";
-        $stmt->bind_param("sssssss", $from_id, $randomString, $dateacc, $user['Processing_value'], $payment_Status, $Payment_Method, $invoice);
-        $stmt->execute();
+        $stmt->execute([$from_id, $randomString, $dateacc, $user['Processing_value'], $payment_Status, $Payment_Method, $invoice]);
         $affilnecurrency = select("PaySetting", "*", "NamePay", "walletaddress", "select")['ValuePay'];
         $straCreateLink = telegram('createInvoiceLink', [
             'title' => "Buy for Price {$user['Processing_value']}",
@@ -5288,7 +5258,7 @@ if ($user['step'] == "createusertest" || preg_match('/locationtest_(.*)/', $data
 if (preg_match('/Confirmpay_user_(\w+)_(\w+)/', $datain, $dataget)) {
     $id_payment = $dataget[1];
     $id_order = $dataget[2];
-    $Payment_report = mysqli_fetch_assoc(mysqli_query($connect, "SELECT * FROM Payment_report WHERE id_order = '$id_order' LIMIT 1"));
+    $Payment_report = ($pdo->query("SELECT * FROM Payment_report WHERE id_order = '$id_order' LIMIT 1"))->fetch(PDO::FETCH_ASSOC);
     if ($Payment_report['payment_Status'] == "paid") {
         telegram('answerCallbackQuery', array(
             'callback_query_id' => $callback_query_id,
@@ -5308,7 +5278,7 @@ if (preg_match('/Confirmpay_user_(\w+)_(\w+)/', $datain, $dataget)) {
         ));
         update("Payment_report", "payment_Status", "paid", "id_order", $Payment_report['id_order']);
         DirectPayment($Payment_report['id_order']);
-        $Balance_id = mysqli_fetch_assoc(mysqli_query($connect, "SELECT * FROM user WHERE id = '{$Payment_report['id_user']}' LIMIT 1"));
+        $Balance_id = ($pdo->query("SELECT * FROM user WHERE id = '{$Payment_report['id_user']}' LIMIT 1"))->fetch(PDO::FETCH_ASSOC);
         $Payment_report['price'] = number_format($Payment_report['price'], 0);
         $text_report = sprintf($textbotlang['hardcoded']['newPaymentAdmin'], $from_id, $Payment_report['price']);
         $pricecashback = select("PaySetting", "ValuePay", "NamePay", "chashbackiranpay2", "select")['ValuePay'];
@@ -5467,7 +5437,7 @@ if (preg_match('/^sendresidcart-(.*)/', $datain, $dataget)) {
             $prodcut['Volume_constraint'] = $service_other['volumebuy'];
         } else {
             $nameloc = select("invoice", "*", "username", $usernamepanel, "select");
-            $prodcut = mysqli_fetch_assoc(mysqli_query($connect, "SELECT * FROM product WHERE (Location = '{$nameloc['Service_location']}' OR Location = '/all') AND agent= '{$user['agent']}' AND code_product = '$codeproduct'"));
+            $prodcut = ($pdo->query("SELECT * FROM product WHERE (Location = '{$nameloc['Service_location']}' OR Location = '/all') AND agent= '{$user['agent']}' AND code_product = '$codeproduct'"))->fetch(PDO::FETCH_ASSOC);
         }
         $Confirm_pay = json_encode([
             'inline_keyboard' => [
@@ -5587,7 +5557,7 @@ if (preg_match('/^sendresidcart-(.*)/', $datain, $dataget)) {
             $prodcut['Volume_constraint'] = $service_other['volumebuy'];
         } else {
             $nameloc = select("invoice", "*", "username", $usernamepanel, "select");
-            $prodcut = mysqli_fetch_assoc(mysqli_query($connect, "SELECT * FROM product WHERE (Location = '{$nameloc['Service_location']}' OR Location = '/all') AND agent= '{$user['agent']}' AND code_product = '$codeproduct'"));
+            $prodcut = ($pdo->query("SELECT * FROM product WHERE (Location = '{$nameloc['Service_location']}' OR Location = '/all') AND agent= '{$user['agent']}' AND code_product = '$codeproduct'"))->fetch(PDO::FETCH_ASSOC);
         }
         $Confirm_pay = json_encode([
             'inline_keyboard' => [
@@ -6196,12 +6166,12 @@ if (preg_match('/^sendresidcart-(.*)/', $datain, $dataget)) {
     $page = 1;
     $items_per_page = 20;
     $start_index = ($page - 1) * $items_per_page;
-    $result = mysqli_query($connect, "SELECT * FROM invoice WHERE id_user = '$from_id' AND (status = 'active' OR status = 'end_of_time'  OR status = 'end_of_volume' OR status = 'sendedwarn' OR status = 'send_on_hold') ORDER BY time_sell DESC LIMIT $start_index, $items_per_page");
+    $result = $pdo->query("SELECT * FROM invoice WHERE id_user = '$from_id' AND (status = 'active' OR status = 'end_of_time'  OR status = 'end_of_volume' OR status = 'sendedwarn' OR status = 'send_on_hold') ORDER BY time_sell DESC LIMIT $start_index, $items_per_page");
     $keyboardlists = [
         'inline_keyboard' => [],
     ];
     if ($statusnote) {
-        while ($row = mysqli_fetch_assoc($result)) {
+        while ($row = ($result)->fetch(PDO::FETCH_ASSOC)) {
             $data = "";
             if ($row != null)
                 $data = " | {$row['note']}";
@@ -6213,7 +6183,7 @@ if (preg_match('/^sendresidcart-(.*)/', $datain, $dataget)) {
             ];
         }
     } else {
-        while ($row = mysqli_fetch_assoc($result)) {
+        while ($row = ($result)->fetch(PDO::FETCH_ASSOC)) {
             $keyboardlists['inline_keyboard'][] = [
                 [
                     'text' => "✨" . $row['username'] . "✨",
@@ -6253,12 +6223,12 @@ if (preg_match('/^sendresidcart-(.*)/', $datain, $dataget)) {
         $next_page = $page + 1;
     }
     $start_index = ($next_page - 1) * $items_per_page;
-    $result = mysqli_query($connect, "SELECT * FROM invoice WHERE id_user = '$from_id' AND (status = 'active' OR status = 'end_of_time'  OR status = 'end_of_volume' OR status = 'sendedwarn' OR Status = 'send_on_hold') ORDER BY time_sell DESC LIMIT $start_index, $items_per_page");
+    $result = $pdo->query("SELECT * FROM invoice WHERE id_user = '$from_id' AND (status = 'active' OR status = 'end_of_time'  OR status = 'end_of_volume' OR status = 'sendedwarn' OR Status = 'send_on_hold') ORDER BY time_sell DESC LIMIT $start_index, $items_per_page");
     $keyboardlists = [
         'inline_keyboard' => [],
     ];
     if ($statusnote) {
-        while ($row = mysqli_fetch_assoc($result)) {
+        while ($row = ($result)->fetch(PDO::FETCH_ASSOC)) {
             $data = "";
             if ($row != null)
                 $data = " | {$row['note']}";
@@ -6270,7 +6240,7 @@ if (preg_match('/^sendresidcart-(.*)/', $datain, $dataget)) {
             ];
         }
     } else {
-        while ($row = mysqli_fetch_assoc($result)) {
+        while ($row = ($result)->fetch(PDO::FETCH_ASSOC)) {
             $keyboardlists['inline_keyboard'][] = [
                 [
                     'text' => "✨" . $row['username'] . "✨",
@@ -6311,12 +6281,12 @@ if (preg_match('/^sendresidcart-(.*)/', $datain, $dataget)) {
         $previous_page = $page - 1;
     }
     $start_index = ($previous_page - 1) * $items_per_page;
-    $result = mysqli_query($connect, "SELECT * FROM invoice WHERE id_user = '$from_id' AND (status = 'active' OR status = 'end_of_time'  OR status = 'end_of_volume' OR status = 'sendedwarn' OR Status = 'send_on_hold') ORDER BY time_sell DESC LIMIT $previous_page, $items_per_page");
+    $result = $pdo->query("SELECT * FROM invoice WHERE id_user = '$from_id' AND (status = 'active' OR status = 'end_of_time'  OR status = 'end_of_volume' OR status = 'sendedwarn' OR Status = 'send_on_hold') ORDER BY time_sell DESC LIMIT $previous_page, $items_per_page");
     $keyboardlists = [
         'inline_keyboard' => [],
     ];
     if ($statusnote) {
-        while ($row = mysqli_fetch_assoc($result)) {
+        while ($row = ($result)->fetch(PDO::FETCH_ASSOC)) {
             $data = "";
             if ($row != null)
                 $data = " | {$row['note']}";
@@ -6328,7 +6298,7 @@ if (preg_match('/^sendresidcart-(.*)/', $datain, $dataget)) {
             ];
         }
     } else {
-        while ($row = mysqli_fetch_assoc($result)) {
+        while ($row = ($result)->fetch(PDO::FETCH_ASSOC)) {
             $keyboardlists['inline_keyboard'][] = [
                 [
                     'text' => "✨" . $row['username'] . "✨",
@@ -6644,4 +6614,3 @@ if (in_array($from_id, $admin_ids))
     require_once 'admin.php';
 
 $pdo = null;
-$connect->close();

@@ -817,13 +817,11 @@ switch ($data['actions']) {
             'volume' => false,
             'time' => false,
         ));
-        $stmt = $connect->prepare("INSERT IGNORE INTO invoice (id_user, id_invoice, username,time_sell, Service_location, name_product, price_product, Volume, Service_time,Status,note,refral,notifctions) VALUES (?, ?, ?, ?, ?, ?, ?, ?,?,?,?,?,?)");
+        $stmt = $pdo->prepare("INSERT IGNORE INTO invoice (id_user, id_invoice, username,time_sell, Service_location, name_product, price_product, Volume, Service_time,Status,note,refral,notifctions) VALUES (?, ?, ?, ?, ?, ?, ?, ?,?,?,?,?,?)");
         $Status = "active";
         $date = time();
         $data['custom_note'] = strval($data['custom_note']) <= 1 ? null : $data['custom_note'];
-        $stmt->bind_param("sssssssssssss", $user_info['id'], $randomString, $username_ac, $date, $panel['name_panel'], $product['name_product'], $product['price_product'], $product['Volume_constraint'], $product['Service_time'], $Status, $data['custom_note'], $user_info['affiliates'], $notifctions);
-        $stmt->execute();
-        $stmt->close();
+        $stmt->execute([$user_info['id'], $randomString, $username_ac, $date, $panel['name_panel'], $product['name_product'], $product['price_product'], $product['Volume_constraint'], $product['Service_time'], $Status, $data['custom_note'], $user_info['affiliates'], $notifctions]);
         $datetimestep = strtotime("+" . $product['Service_time'] . "days");
         if ($product['Service_time'] == 0) {
             $datetimestep = 0;

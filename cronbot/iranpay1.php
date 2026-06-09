@@ -7,11 +7,11 @@ require_once __DIR__ . '/../jdf.php';
 require_once __DIR__ . '/../function.php';
 require __DIR__ . '/../vendor/autoload.php';
 $ManagePanel = new ManagePanel();
-$setting = mysqli_fetch_assoc(mysqli_query($connect, "SELECT * FROM setting"));
+$setting = ($pdo->query("SELECT * FROM setting"))->fetch(PDO::FETCH_ASSOC);
 $paymentreports = select("topicid","idreport","report","paymentreport","select")['idreport'];
 $textbotlang = languagechange();
-$list_service = mysqli_query($connect, "SELECT * FROM Payment_report WHERE payment_Status = 'Unpaid' AND Payment_Method = 'Currency Rial 3' ORDER BY RAND() LIMIT 10");
-while ($Payment_report = mysqli_fetch_assoc($list_service)) {
+$list_service = $pdo->query("SELECT * FROM Payment_report WHERE payment_Status = 'Unpaid' AND Payment_Method = 'Currency Rial 3' ORDER BY RAND() LIMIT 10");
+while ($Payment_report = ($list_service)->fetch(PDO::FETCH_ASSOC)) {
     if ($Payment_report['payment_Status'] == "paid")return;
     $StatusPayment = verifpay($Payment_report['dec_not_confirmed']);
     if(!is_string($StatusPayment))continue;

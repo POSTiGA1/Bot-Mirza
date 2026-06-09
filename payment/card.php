@@ -17,7 +17,7 @@ use Endroid\QrCode\Label\LabelAlignment;
 use Endroid\QrCode\RoundBlockSizeMode;
 use Endroid\QrCode\Writer\PngWriter;
 
-$PaySetting = mysqli_fetch_assoc(mysqli_query($connect, "SELECT (ValuePay) FROM PaySetting WHERE NamePay = 'statuscardautoconfirm'"))['ValuePay'];
+$PaySetting = ($pdo->query("SELECT (ValuePay) FROM PaySetting WHERE NamePay = 'statuscardautoconfirm'"))->fetch(PDO::FETCH_ASSOC)['ValuePay'];
 if($PaySetting == "onautoconfirm"){
 $name_post = array_keys($_POST);
 $name_post = array_map('htmlspecialchars', $name_post);
@@ -26,8 +26,8 @@ $secret_key = select("admin", "*", "password", base64_decode($name_post[0]), "co
 if($secret_key == 0)return;
 $name_bank = $name_post[1];
 $valuepost = $_POST["{$name_post[0]}_$name_bank"];
-$setting = mysqli_fetch_assoc(mysqli_query($connect, "SELECT * FROM setting"));
-$admin_ids = array_column(mysqli_fetch_all(mysqli_query($connect, "SELECT (id_admin) FROM admin"), MYSQLI_ASSOC), 'id_admin');
+$setting = ($pdo->query("SELECT * FROM setting"))->fetch(PDO::FETCH_ASSOC);
+$admin_ids = array_column(($pdo->query("SELECT (id_admin) FROM admin"))->fetchAll(PDO::FETCH_ASSOC), 'id_admin');
 if($name_bank == 'blu'){
 $pattern = "/(\d[\d,]+) ریال به حساب شما نشست\./u";
 preg_match($pattern, $valuepost, $matches);
@@ -95,11 +95,11 @@ if(preg_match('/(\d{1,3}(?:,\d{3})*\+)/', $valuepost, $matches)) {
 
 if (is_numeric($amountInteger) && substr($amountInteger, -3) === '000')return;
 if(isset($amountInteger) && $amountInteger !== NULL){
-    $datauser = mysqli_fetch_assoc(mysqli_query($connect, "SELECT * FROM Payment_report WHERE price = '$amountInteger' AND (payment_Status = 'Unpaid' OR payment_Status = 'waiting')"));
+    $datauser = ($pdo->query("SELECT * FROM Payment_report WHERE price = '$amountInteger' AND (payment_Status = 'Unpaid' OR payment_Status = 'waiting')"))->fetch(PDO::FETCH_ASSOC);
     $order_id = $datauser['id_order'];
-    $Payment_report = mysqli_fetch_assoc(mysqli_query($connect, "SELECT * FROM Payment_report WHERE id_order = '$order_id' LIMIT 1"));
+    $Payment_report = ($pdo->query("SELECT * FROM Payment_report WHERE id_order = '$order_id' LIMIT 1"))->fetch(PDO::FETCH_ASSOC);
     if(!isset($Payment_report['price']) || $Payment_report['price'] == null)return;
-    $Balance_id = mysqli_fetch_assoc(mysqli_query($connect, "SELECT * FROM user WHERE id = '{$Payment_report['id_user']}' LIMIT 1"));
+    $Balance_id = ($pdo->query("SELECT * FROM user WHERE id = '{$Payment_report['id_user']}' LIMIT 1"))->fetch(PDO::FETCH_ASSOC);
     $textbotlang = languagechange();
 
     if ($Payment_report['payment_Status'] == "paid" || $Payment_report['payment_Status'] == "reject") {
@@ -112,7 +112,7 @@ if(isset($amountInteger) && $amountInteger !== NULL){
         return;}
         DirectPayment($order_id,"../images.jpg");
         update("Payment_report","payment_Status","paid",'id_order',$order_id);
-    $balanceformatsell = number_format(mysqli_fetch_assoc(mysqli_query($connect, "SELECT (Balance) FROM user WHERE id = '{$Payment_report['id_user']}' LIMIT 1"))['Balance'], 0);
+    $balanceformatsell = number_format(($pdo->query("SELECT (Balance) FROM user WHERE id = '{$Payment_report['id_user']}' LIMIT 1"))->fetch(PDO::FETCH_ASSOC)['Balance'], 0);
     $paymentreports = select("topicid","idreport","report","paymentreport","select")['idreport'];
     $text_report = sprintf($textbotlang['paymentGateway']['reportCard'], $Payment_report['price'], $Balance_id['id'], $Balance_id['username'], $balanceformatsell, $order_id);
     if (strlen($setting['Channel_Report']) > 0) {

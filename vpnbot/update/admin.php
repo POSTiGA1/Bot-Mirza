@@ -238,14 +238,14 @@ if ($text == "📞 تنظیم نام کاربری پشتیبانی") {
         return;
     }
     $date = date("Y-m-d");
-    $dayListSell = mysqli_fetch_assoc(mysqli_query($connect, "SELECT COUNT(*) FROM invoice WHERE (status = 'active' OR status = 'end_of_time'  OR status = 'end_of_volume' OR status = 'sendedwarn' OR Status = 'send_on_hold') AND id_user = '$id_user' AND bottype = '$ApiToken'"));
-    $balanceall = mysqli_fetch_assoc(mysqli_query($connect, "SELECT SUM(price) FROM Payment_report WHERE payment_Status = 'paid' AND id_user = '$id_user' AND Payment_Method != 'low balance by admin' AND bottype = '$ApiToken'"));
-    $subbuyuser = mysqli_fetch_assoc(mysqli_query($connect, "SELECT SUM(price_product) FROM invoice WHERE (status = 'active' OR status = 'end_of_time'  OR status = 'end_of_volume' OR status = 'sendedwarn' OR Status = 'send_on_hold') AND id_user = '$id_user' AND bottype = '$ApiToken'"));
-    $invoicecount = mysqli_fetch_assoc(mysqli_query($connect, "SELECT count(*) FROM invoice WHERE (status = 'active' OR status = 'end_of_time'  OR status = 'end_of_volume' OR status = 'sendedwarn' OR Status = 'send_on_hold') AND id_user = '$id_user' AND bottype = '$ApiToken'"))['count(*)'];
+    $dayListSell = ($pdo->query("SELECT COUNT(*) FROM invoice WHERE (status = 'active' OR status = 'end_of_time'  OR status = 'end_of_volume' OR status = 'sendedwarn' OR Status = 'send_on_hold') AND id_user = '$id_user' AND bottype = '$ApiToken'"))->fetch(PDO::FETCH_ASSOC);
+    $balanceall = ($pdo->query("SELECT SUM(price) FROM Payment_report WHERE payment_Status = 'paid' AND id_user = '$id_user' AND Payment_Method != 'low balance by admin' AND bottype = '$ApiToken'"))->fetch(PDO::FETCH_ASSOC);
+    $subbuyuser = ($pdo->query("SELECT SUM(price_product) FROM invoice WHERE (status = 'active' OR status = 'end_of_time'  OR status = 'end_of_volume' OR status = 'sendedwarn' OR Status = 'send_on_hold') AND id_user = '$id_user' AND bottype = '$ApiToken'"))->fetch(PDO::FETCH_ASSOC);
+    $invoicecount = ($pdo->query("SELECT count(*) FROM invoice WHERE (status = 'active' OR status = 'end_of_time'  OR status = 'end_of_volume' OR status = 'sendedwarn' OR Status = 'send_on_hold') AND id_user = '$id_user' AND bottype = '$ApiToken'"))->fetch(PDO::FETCH_ASSOC)['count(*)'];
     if ($invoicecount == 0) {
         $sumvolume['SUM(Volume)'] = 0;
     } else {
-        $sumvolume = mysqli_fetch_assoc(mysqli_query($connect, "SELECT SUM(Volume) FROM invoice WHERE (status = 'active' OR status = 'end_of_time'  OR status = 'end_of_volume' OR status = 'sendedwarn' OR Status = 'send_on_hold') AND id_user = '$id_user' AND name_product != 'سرویس تست'"));
+        $sumvolume = ($pdo->query("SELECT SUM(Volume) FROM invoice WHERE (status = 'active' OR status = 'end_of_time'  OR status = 'end_of_volume' OR status = 'sendedwarn' OR Status = 'send_on_hold') AND id_user = '$id_user' AND name_product != 'سرویس تست'"))->fetch(PDO::FETCH_ASSOC);
     }
     $user = select("user", "*", "id", $id_user, "select");
     $roll_Status = [
@@ -351,12 +351,11 @@ if ($text == "📞 تنظیم نام کاربری پشتیبانی") {
     }
     $dateacc = date('Y/m/d H:i:s');
     $randomString = bin2hex(random_bytes(5));
-    $stmt = $connect->prepare("INSERT INTO Payment_report (id_user,id_order,time,price,payment_Status,Payment_Method,id_invoice,bottype) VALUES (?,?,?,?,?,?,?,?)");
+    $stmt = $pdo->prepare("INSERT INTO Payment_report (id_user,id_order,time,price,payment_Status,Payment_Method,id_invoice,bottype) VALUES (?,?,?,?,?,?,?,?)");
     $payment_Status = "paid";
     $Payment_Method = "add balance by admin";
     $invoice = null;
-    $stmt->bind_param("ssssssss", $user['Processing_value'], $randomString, $dateacc, $text, $payment_Status, $Payment_Method, $invoice, $ApiToken);
-    $stmt->execute();
+    $stmt->execute([$user['Processing_value'], $randomString, $dateacc, $text, $payment_Status, $Payment_Method, $invoice, $ApiToken]);
     sendmessage($from_id, $textbotlang['Admin']['ManageUser']['addbalanced'], $keyboardadmin, 'html');
     $userbalance = json_decode(file_get_contents("data/{$user['Processing_value']}/{$user['Processing_value']}.json"), true);
     $Balance_add_user = $userbalance['Balance'] + $text;
@@ -382,12 +381,11 @@ if ($text == "📞 تنظیم نام کاربری پشتیبانی") {
     }
     $dateacc = date('Y/m/d H:i:s');
     $randomString = bin2hex(random_bytes(5));
-    $stmt = $connect->prepare("INSERT INTO Payment_report (id_user,id_order,time,price,payment_Status,Payment_Method,id_invoice,bottype) VALUES (?,?,?,?,?,?,?,?)");
+    $stmt = $pdo->prepare("INSERT INTO Payment_report (id_user,id_order,time,price,payment_Status,Payment_Method,id_invoice,bottype) VALUES (?,?,?,?,?,?,?,?)");
     $payment_Status = "paid";
     $Payment_Method = "low balance by admin";
     $invoice = null;
-    $stmt->bind_param("ssssssss", $user['Processing_value'], $randomString, $dateacc, $text, $payment_Status, $Payment_Method, $invoice, $ApiToken);
-    $stmt->execute();
+    $stmt->execute([$user['Processing_value'], $randomString, $dateacc, $text, $payment_Status, $Payment_Method, $invoice, $ApiToken]);
     sendmessage($from_id, $textbotlang['Admin']['ManageUser']['lowbalanced'], $keyboardadmin, 'html');
     $userbalance = json_decode(file_get_contents("data/{$user['Processing_value']}/{$user['Processing_value']}.json"), true);
     $Balance_add_user = intval($userbalance['Balance']) - intval($text);
@@ -428,8 +426,8 @@ if ($text == "📞 تنظیم نام کاربری پشتیبانی") {
         file_put_contents('product.json', "{}");
     }
     $product = [];
-    $getdataproduct = mysqli_query($connect, "SELECT * FROM product WHERE agent = '{$userbot['agent']}'");
-    while ($row = mysqli_fetch_assoc($getdataproduct)) {
+    $getdataproduct = $pdo->query("SELECT * FROM product WHERE agent = '{$userbot['agent']}'");
+    while ($row = ($getdataproduct)->fetch(PDO::FETCH_ASSOC)) {
         $panel = select("marzban_panel", "*", "name_panel", $row['Location'], "select");
         if (in_array($panel['name_panel'], $hide_panel))
             continue;
@@ -635,8 +633,8 @@ if ($text == "📞 تنظیم نام کاربری پشتیبانی") {
         file_put_contents('product_name.json', "{}");
     }
     $product = [];
-    $getdataproduct = mysqli_query($connect, "SELECT * FROM product WHERE agent = '{$userbot['agent']}'");
-    while ($row = mysqli_fetch_assoc($getdataproduct)) {
+    $getdataproduct = $pdo->query("SELECT * FROM product WHERE agent = '{$userbot['agent']}'");
+    while ($row = ($getdataproduct)->fetch(PDO::FETCH_ASSOC)) {
         $panel = select("marzban_panel", "*", "name_panel", $row['Location'], "select");
         if (in_array($panel['name_panel'], $hide_panel))
             continue;

@@ -1372,9 +1372,8 @@ elseif ($datain == "systemsms") {
         sendmessage($from_id, $textbotlang['Admin']['adminphp']['err_tutorial_name'], null, 'HTML');
         return;
     }
-    $stmt = $connect->prepare("INSERT IGNORE INTO help (name_os) VALUES (?)");
-    $stmt->bind_param("s", $text);
-    $stmt->execute();
+    $stmt = $pdo->prepare("INSERT IGNORE INTO help (name_os) VALUES (?)");
+    $stmt->execute([$text]);
     update("user", "Processing_value", $text, "id", $from_id);
     if ($setting['categoryhelp'] == "0") {
         update("help", "category", "0", "name_os", $user['Processing_value']);
@@ -2816,12 +2815,12 @@ elseif ($datain == "systemsms") {
     update("user", "Processing_value_tow", $typeagent, "id", $from_id);
     $product = [];
     $panel = select("marzban_panel", "*", "code_panel", $user['Processing_value_one'], "select");
-    $getdataproduct = mysqli_query($connect, "SELECT * FROM product WHERE (Location = '{$panel['name_panel']}' or Location = '/all') AND agent = '$typeagent'");
+    $getdataproduct = $pdo->query("SELECT * FROM product WHERE (Location = '{$panel['name_panel']}' or Location = '/all') AND agent = '$typeagent'");
     $list_product = [
         'inline_keyboard' => [],
     ];
     if (isset($getdataproduct)) {
-        while ($row = mysqli_fetch_assoc($getdataproduct)) {
+        while ($row = ($getdataproduct)->fetch(PDO::FETCH_ASSOC)) {
             $list_product['inline_keyboard'][] = [
                 ['text' => $row['name_product'], 'callback_data' => "productedit_" . $row['id']]
             ];
@@ -2838,7 +2837,7 @@ elseif ($datain == "systemsms") {
     deletemessage($from_id, $message_id);
     update("user", "Processing_value", $id_product, "id", $from_id);
     $panel = select("marzban_panel", "*", "code_panel", $user['Processing_value_one'], "select");
-    $info_product = mysqli_fetch_assoc(mysqli_query($connect, "SELECT * FROM product WHERE id = '$id_product'  AND agent = '{$user['Processing_value_tow']}' AND (Location = '{$panel['name_panel']}' OR Location = '/all') LIMIT 1"));
+    $info_product = ($pdo->query("SELECT * FROM product WHERE id = '$id_product'  AND agent = '{$user['Processing_value_tow']}' AND (Location = '{$panel['name_panel']}' OR Location = '/all') LIMIT 1"))->fetch(PDO::FETCH_ASSOC);
     $count_invoice = select("invoice", "*", "name_product", $info_product['name_product'], "count");
     $infoproduct = sprintf($textbotlang['Admin']['adminphp']['msg_user_price_volume'], $info_product['name_product'], $info_product['price_product'], $info_product['Volume_constraint'], $info_product['Location'], $info_product['Service_time'], $info_product['agent'], $info_product['data_limit_reset'], $info_product['note'], $info_product['category'], $count_invoice);
     sendmessage($from_id, $infoproduct, $change_product, 'HTML');
@@ -3156,14 +3155,14 @@ elseif ($datain == "systemsms") {
         return;
     }
     $date = date("Y-m-d");
-    $dayListSell = mysqli_fetch_assoc(mysqli_query($connect, "SELECT COUNT(*) FROM invoice WHERE (status = 'active' OR status = 'end_of_time'  OR status = 'end_of_volume' OR status = 'sendedwarn' OR Status = 'send_on_hold') AND id_user = '$id_user'"));
-    $balanceall = mysqli_fetch_assoc(mysqli_query($connect, "SELECT SUM(price) FROM Payment_report WHERE payment_Status = 'paid' AND id_user = '$id_user' AND Payment_Method != 'low balance by admin'"));
-    $subbuyuser = mysqli_fetch_assoc(mysqli_query($connect, "SELECT SUM(price_product) FROM invoice WHERE (status = 'active' OR status = 'end_of_time'  OR status = 'end_of_volume' OR status = 'sendedwarn' OR Status = 'send_on_hold') AND id_user = '$id_user'"));
+    $dayListSell = ($pdo->query("SELECT COUNT(*) FROM invoice WHERE (status = 'active' OR status = 'end_of_time'  OR status = 'end_of_volume' OR status = 'sendedwarn' OR Status = 'send_on_hold') AND id_user = '$id_user'"))->fetch(PDO::FETCH_ASSOC);
+    $balanceall = ($pdo->query("SELECT SUM(price) FROM Payment_report WHERE payment_Status = 'paid' AND id_user = '$id_user' AND Payment_Method != 'low balance by admin'"))->fetch(PDO::FETCH_ASSOC);
+    $subbuyuser = ($pdo->query("SELECT SUM(price_product) FROM invoice WHERE (status = 'active' OR status = 'end_of_time'  OR status = 'end_of_volume' OR status = 'sendedwarn' OR Status = 'send_on_hold') AND id_user = '$id_user'"))->fetch(PDO::FETCH_ASSOC);
     $invoicecount = select("invoice", '*', "id_user", $id_user, "count");
     if ($invoicecount == 0) {
         $sumvolume['SUM(Volume)'] = 0;
     } else {
-        $sumvolume = mysqli_fetch_assoc(mysqli_query($connect, "SELECT SUM(Volume) FROM invoice WHERE (status = 'active' OR status = 'end_of_time'  OR status = 'end_of_volume' OR status = 'sendedwarn' OR Status = 'send_on_hold') AND id_user = '$id_user' AND name_product != '{$textbotlang['Admin']['adminphp']['db_test_service_name']}'"));
+        $sumvolume = ($pdo->query("SELECT SUM(Volume) FROM invoice WHERE (status = 'active' OR status = 'end_of_time'  OR status = 'end_of_volume' OR status = 'sendedwarn' OR Status = 'send_on_hold') AND id_user = '$id_user' AND name_product != '{$textbotlang['Admin']['adminphp']['db_test_service_name']}'"))->fetch(PDO::FETCH_ASSOC);
     }
     $user = select("user", "*", "id", $id_user, "select");
     $roll_Status = [
@@ -3401,13 +3400,11 @@ elseif ($datain == "systemsms") {
             ensureCardNumberTableSupportsUnicode();
         }
 
-        $stmt = $connect->prepare("INSERT INTO card_number (cardnumber,namecard) VALUES (?,?)");
-        $stmt->bind_param("ss", $user['Processing_value'], $text);
-        $stmt->execute();
-        $stmt->close();
+        $stmt = $pdo->prepare("INSERT INTO card_number (cardnumber,namecard) VALUES (?,?)");
+        $stmt->execute([$user['Processing_value'], $text]);
         sendmessage($from_id, $textbotlang['Admin']['SettingPayment']['saveCard'], $CartManage, 'HTML');
         step('home', $from_id);
-    } catch (\mysqli_sql_exception $e) {
+    } catch (\PDOException $e) {
         error_log('Failed to save card number: ' . $e->getMessage());
         if (stripos($e->getMessage(), 'Incorrect string value') !== false) {
             error_log('card_number insert failed due to charset mismatch. Please verify the table collation.');
@@ -3483,8 +3480,8 @@ elseif ($datain == "systemsms") {
             $mem_total = formatBytes($System_Stats['mem_total']);
             $mem_used = formatBytes($System_Stats['mem_used']);
             $bandwidth = formatBytes($System_Stats['outgoing_bandwidth'] + $System_Stats['incoming_bandwidth']);
-            $ListSell = number_format(mysqli_fetch_assoc(mysqli_query($connect, "SELECT COUNT(*) FROM invoice WHERE (status = 'active' OR status = 'end_of_time'  OR status = 'end_of_volume' OR status = 'sendedwarn' OR Status = 'send_on_hold') AND Service_location = '{$marzban_list_get['name_panel']}' AND name_product != '{$textbotlang['Admin']['adminphp']['db_test_service_name']}'"))['COUNT(*)'] ?? 0);
-            $ListSellSUM = number_format(mysqli_fetch_assoc(mysqli_query($connect, "SELECT SUM(price_product) FROM invoice WHERE (status = 'active' OR status = 'end_of_time'  OR status = 'end_of_volume' OR status = 'sendedwarn' OR Status = 'send_on_hold') AND Service_location = '{$marzban_list_get['name_panel']}' AND name_product != '{$textbotlang['Admin']['adminphp']['db_test_service_name']}'"))['SUM(price_product)'] ?? 0);
+            $ListSell = number_format(($pdo->query("SELECT COUNT(*) FROM invoice WHERE (status = 'active' OR status = 'end_of_time'  OR status = 'end_of_volume' OR status = 'sendedwarn' OR Status = 'send_on_hold') AND Service_location = '{$marzban_list_get['name_panel']}' AND name_product != '{$textbotlang['Admin']['adminphp']['db_test_service_name']}'"))->fetch(PDO::FETCH_ASSOC)['COUNT(*)'] ?? 0);
+            $ListSellSUM = number_format(($pdo->query("SELECT SUM(price_product) FROM invoice WHERE (status = 'active' OR status = 'end_of_time'  OR status = 'end_of_volume' OR status = 'sendedwarn' OR Status = 'send_on_hold') AND Service_location = '{$marzban_list_get['name_panel']}' AND name_product != '{$textbotlang['Admin']['adminphp']['db_test_service_name']}'"))->fetch(PDO::FETCH_ASSOC)['SUM(price_product)'] ?? 0);
 
             $Condition_marzban = "";
             $text_marzban = sprintf($textbotlang['Admin']['adminphp']['ok_select_panel_user_1'], $total_user, $active_users, $System_Stats['version'], $mem_total, $mem_used, $bandwidth, $ListSell, $ListSellSUM, $marzban_list_get['agent']);
@@ -3595,8 +3592,8 @@ elseif ($datain == "systemsms") {
             $System_Stats = json_decode($System_Stats['body'], true);
             $active_users = $System_Stats['active'];
             $total_user = $System_Stats['total'];
-            $ListSell = number_format(mysqli_fetch_assoc(mysqli_query($connect, "SELECT COUNT(*) FROM invoice WHERE (status = 'active' OR status = 'end_of_time'  OR status = 'end_of_volume' OR status = 'sendedwarn' OR Status = 'send_on_hold') AND Service_location = '{$marzban_list_get['name_panel']}' AND name_product != '{$textbotlang['Admin']['adminphp']['db_test_service_name']}'"))['COUNT(*)'] ?? 0);
-            $ListSellSUM = number_format(mysqli_fetch_assoc(mysqli_query($connect, "SELECT SUM(price_product) FROM invoice WHERE (status = 'active' OR status = 'end_of_time'  OR status = 'end_of_volume' OR status = 'sendedwarn' OR Status = 'send_on_hold') AND Service_location = '{$marzban_list_get['name_panel']}' AND name_product != '{$textbotlang['Admin']['adminphp']['db_test_service_name']}'"))['SUM(price_product)'] ?? 0);
+            $ListSell = number_format(($pdo->query("SELECT COUNT(*) FROM invoice WHERE (status = 'active' OR status = 'end_of_time'  OR status = 'end_of_volume' OR status = 'sendedwarn' OR Status = 'send_on_hold') AND Service_location = '{$marzban_list_get['name_panel']}' AND name_product != '{$textbotlang['Admin']['adminphp']['db_test_service_name']}'"))->fetch(PDO::FETCH_ASSOC)['COUNT(*)'] ?? 0);
+            $ListSellSUM = number_format(($pdo->query("SELECT SUM(price_product) FROM invoice WHERE (status = 'active' OR status = 'end_of_time'  OR status = 'end_of_volume' OR status = 'sendedwarn' OR Status = 'send_on_hold') AND Service_location = '{$marzban_list_get['name_panel']}' AND name_product != '{$textbotlang['Admin']['adminphp']['db_test_service_name']}'"))->fetch(PDO::FETCH_ASSOC)['SUM(price_product)'] ?? 0);
             $Condition_marzban = "";
             $text_marzban = sprintf($textbotlang['Admin']['adminphp']['ok_select_panel_user_3'], $total_user, $active_users, $ListSell, $ListSellSUM, $marzban_list_get['agent']);
             sendmessage($from_id, $text_marzban, $optionmarzneshin, 'HTML');
@@ -3834,7 +3831,7 @@ elseif ($datain == "systemsms") {
     $page = 1;
     $items_per_page = 10;
     $start_index = ($page - 1) * $items_per_page;
-    $result = mysqli_query($connect, "SELECT * FROM user  LIMIT $start_index, $items_per_page");
+    $result = $pdo->query("SELECT * FROM user  LIMIT $start_index, $items_per_page");
     $keyboardlists = [
         'inline_keyboard' => [],
     ];
@@ -3843,7 +3840,7 @@ elseif ($datain == "systemsms") {
         ['text' => $textbotlang['keyboard']['username'], 'callback_data' => "username"],
         ['text' => $textbotlang['keyboard']['userId'], 'callback_data' => "iduser"]
     ];
-    while ($row = mysqli_fetch_assoc($result)) {
+    while ($row = ($result)->fetch(PDO::FETCH_ASSOC)) {
         $keyboardlists['inline_keyboard'][] = [
             [
                 'text' => $textbotlang['Admin']['manageUser']['manageUserBtn'],
@@ -3890,7 +3887,7 @@ elseif ($datain == "systemsms") {
         $next_page = $page + 1;
     }
     $start_index = ($next_page - 1) * $items_per_page;
-    $result = mysqli_query($connect, "SELECT * FROM user LIMIT $start_index, $items_per_page");
+    $result = $pdo->query("SELECT * FROM user LIMIT $start_index, $items_per_page");
     $keyboardlists = [
         'inline_keyboard' => [],
     ];
@@ -3899,7 +3896,7 @@ elseif ($datain == "systemsms") {
         ['text' => $textbotlang['keyboard']['username'], 'callback_data' => "username"],
         ['text' => $textbotlang['keyboard']['userId'], 'callback_data' => "iduser"]
     ];
-    while ($row = mysqli_fetch_assoc($result)) {
+    while ($row = ($result)->fetch(PDO::FETCH_ASSOC)) {
         $keyboardlists['inline_keyboard'][] = [
             [
                 'text' => $textbotlang['Admin']['manageUser']['manageUserBtn'],
@@ -3938,7 +3935,7 @@ elseif ($datain == "systemsms") {
         $next_page = $page - 1;
     }
     $start_index = ($next_page - 1) * $items_per_page;
-    $result = mysqli_query($connect, "SELECT * FROM user LIMIT $start_index, $items_per_page");
+    $result = $pdo->query("SELECT * FROM user LIMIT $start_index, $items_per_page");
     $keyboardlists = [
         'inline_keyboard' => [],
     ];
@@ -3947,7 +3944,7 @@ elseif ($datain == "systemsms") {
         ['text' => $textbotlang['keyboard']['username'], 'callback_data' => "username"],
         ['text' => $textbotlang['keyboard']['userId'], 'callback_data' => "iduser"]
     ];
-    while ($row = mysqli_fetch_assoc($result)) {
+    while ($row = ($result)->fetch(PDO::FETCH_ASSOC)) {
         $keyboardlists['inline_keyboard'][] = [
             [
                 'text' => $textbotlang['Admin']['manageUser']['manageUserBtn'],
@@ -3997,9 +3994,9 @@ elseif ($datain == "systemsms") {
     $items_per_page = 10;
     $start_index = ($page - 1) * $items_per_page;
     if ($typeagent == "all") {
-        $result = mysqli_query($connect, "SELECT * FROM user WHERE agent != 'f'  LIMIT $start_index, $items_per_page");
+        $result = $pdo->query("SELECT * FROM user WHERE agent != 'f'  LIMIT $start_index, $items_per_page");
     } else {
-        $result = mysqli_query($connect, "SELECT * FROM user WHERE agent = '$typeagent'  LIMIT $start_index, $items_per_page");
+        $result = $pdo->query("SELECT * FROM user WHERE agent = '$typeagent'  LIMIT $start_index, $items_per_page");
     }
     $keyboardlists = [
         'inline_keyboard' => [],
@@ -4009,7 +4006,7 @@ elseif ($datain == "systemsms") {
         ['text' => $textbotlang['keyboard']['username'], 'callback_data' => "username"],
         ['text' => $textbotlang['keyboard']['userId'], 'callback_data' => "iduser"]
     ];
-    while ($row = mysqli_fetch_assoc($result)) {
+    while ($row = ($result)->fetch(PDO::FETCH_ASSOC)) {
         $keyboardlists['inline_keyboard'][] = [
             [
                 'text' => $textbotlang['Admin']['manageUser']['manageUserBtn'],
@@ -4054,9 +4051,9 @@ elseif ($datain == "systemsms") {
     }
     $start_index = ($next_page - 1) * $items_per_page;
     if ($typeagent == "all") {
-        $result = mysqli_query($connect, "SELECT * FROM user WHERE agent != 'f'  LIMIT $start_index, $items_per_page");
+        $result = $pdo->query("SELECT * FROM user WHERE agent != 'f'  LIMIT $start_index, $items_per_page");
     } else {
-        $result = mysqli_query($connect, "SELECT * FROM user WHERE agent = '$typeagent'  LIMIT $start_index, $items_per_page");
+        $result = $pdo->query("SELECT * FROM user WHERE agent = '$typeagent'  LIMIT $start_index, $items_per_page");
     }
     $keyboardlists = [
         'inline_keyboard' => [],
@@ -4066,7 +4063,7 @@ elseif ($datain == "systemsms") {
         ['text' => $textbotlang['keyboard']['username'], 'callback_data' => "username"],
         ['text' => $textbotlang['keyboard']['userId'], 'callback_data' => "iduser"]
     ];
-    while ($row = mysqli_fetch_assoc($result)) {
+    while ($row = ($result)->fetch(PDO::FETCH_ASSOC)) {
         $keyboardlists['inline_keyboard'][] = [
             [
                 'text' => $textbotlang['Admin']['manageUser']['manageUserBtn'],
@@ -4107,9 +4104,9 @@ elseif ($datain == "systemsms") {
     }
     $start_index = ($next_page - 1) * $items_per_page;
     if ($typeagent == "all") {
-        $result = mysqli_query($connect, "SELECT * FROM user WHERE agent != 'f'  LIMIT $start_index, $items_per_page");
+        $result = $pdo->query("SELECT * FROM user WHERE agent != 'f'  LIMIT $start_index, $items_per_page");
     } else {
-        $result = mysqli_query($connect, "SELECT * FROM user WHERE agent = '$typeagent'  LIMIT $start_index, $items_per_page");
+        $result = $pdo->query("SELECT * FROM user WHERE agent = '$typeagent'  LIMIT $start_index, $items_per_page");
     }
     $keyboardlists = [
         'inline_keyboard' => [],
@@ -4119,7 +4116,7 @@ elseif ($datain == "systemsms") {
         ['text' => $textbotlang['keyboard']['username'], 'callback_data' => "username"],
         ['text' => $textbotlang['keyboard']['userId'], 'callback_data' => "iduser"]
     ];
-    while ($row = mysqli_fetch_assoc($result)) {
+    while ($row = ($result)->fetch(PDO::FETCH_ASSOC)) {
         $keyboardlists['inline_keyboard'][] = [
             [
                 'text' => $textbotlang['Admin']['manageUser']['manageUserBtn'],
@@ -4154,7 +4151,7 @@ elseif ($datain == "systemsms") {
     $page = 1;
     $items_per_page = 10;
     $start_index = ($page - 1) * $items_per_page;
-    $result = mysqli_query($connect, "SELECT * FROM user WHERE Balance != '0'  LIMIT $start_index, $items_per_page");
+    $result = $pdo->query("SELECT * FROM user WHERE Balance != '0'  LIMIT $start_index, $items_per_page");
     $keyboardlists = [
         'inline_keyboard' => [],
     ];
@@ -4163,7 +4160,7 @@ elseif ($datain == "systemsms") {
         ['text' => $textbotlang['keyboard']['username'], 'callback_data' => "username"],
         ['text' => $textbotlang['keyboard']['userId'], 'callback_data' => "iduser"]
     ];
-    while ($row = mysqli_fetch_assoc($result)) {
+    while ($row = ($result)->fetch(PDO::FETCH_ASSOC)) {
         $keyboardlists['inline_keyboard'][] = [
             [
                 'text' => $textbotlang['Admin']['manageUser']['manageUserBtn'],
@@ -4210,7 +4207,7 @@ elseif ($datain == "systemsms") {
         $next_page = $page + 1;
     }
     $start_index = ($next_page - 1) * $items_per_page;
-    $result = mysqli_query($connect, "SELECT * FROM user WHERE Balance != '0'  LIMIT $start_index, $items_per_page");
+    $result = $pdo->query("SELECT * FROM user WHERE Balance != '0'  LIMIT $start_index, $items_per_page");
     $keyboardlists = [
         'inline_keyboard' => [],
     ];
@@ -4219,7 +4216,7 @@ elseif ($datain == "systemsms") {
         ['text' => $textbotlang['keyboard']['username'], 'callback_data' => "username"],
         ['text' => $textbotlang['keyboard']['userId'], 'callback_data' => "iduser"]
     ];
-    while ($row = mysqli_fetch_assoc($result)) {
+    while ($row = ($result)->fetch(PDO::FETCH_ASSOC)) {
         $keyboardlists['inline_keyboard'][] = [
             [
                 'text' => $textbotlang['Admin']['manageUser']['manageUserBtn'],
@@ -4258,7 +4255,7 @@ elseif ($datain == "systemsms") {
         $next_page = $page - 1;
     }
     $start_index = ($next_page - 1) * $items_per_page;
-    $result = mysqli_query($connect, "SELECT * FROM user WHERE Balance != '0'  LIMIT $start_index, $items_per_page");
+    $result = $pdo->query("SELECT * FROM user WHERE Balance != '0'  LIMIT $start_index, $items_per_page");
     $keyboardlists = [
         'inline_keyboard' => [],
     ];
@@ -4267,7 +4264,7 @@ elseif ($datain == "systemsms") {
         ['text' => $textbotlang['keyboard']['username'], 'callback_data' => "username"],
         ['text' => $textbotlang['keyboard']['userId'], 'callback_data' => "iduser"]
     ];
-    while ($row = mysqli_fetch_assoc($result)) {
+    while ($row = ($result)->fetch(PDO::FETCH_ASSOC)) {
         $keyboardlists['inline_keyboard'][] = [
             [
                 'text' => $textbotlang['Admin']['manageUser']['manageUserBtn'],
@@ -4302,7 +4299,7 @@ elseif ($datain == "systemsms") {
     $page = 1;
     $items_per_page = 10;
     $start_index = ($page - 1) * $items_per_page;
-    $result = mysqli_query($connect, "SELECT * FROM user WHERE affiliatescount != '0'  LIMIT $start_index, $items_per_page");
+    $result = $pdo->query("SELECT * FROM user WHERE affiliatescount != '0'  LIMIT $start_index, $items_per_page");
     $keyboardlists = [
         'inline_keyboard' => [],
     ];
@@ -4311,7 +4308,7 @@ elseif ($datain == "systemsms") {
         ['text' => $textbotlang['keyboard']['username'], 'callback_data' => "username"],
         ['text' => $textbotlang['keyboard']['userId'], 'callback_data' => "iduser"]
     ];
-    while ($row = mysqli_fetch_assoc($result)) {
+    while ($row = ($result)->fetch(PDO::FETCH_ASSOC)) {
         $keyboardlists['inline_keyboard'][] = [
             [
                 'text' => $textbotlang['Admin']['manageUser']['manageUserBtn'],
@@ -4358,7 +4355,7 @@ elseif ($datain == "systemsms") {
         $next_page = $page + 1;
     }
     $start_index = ($next_page - 1) * $items_per_page;
-    $result = mysqli_query($connect, "SELECT * FROM user WHERE affiliatescount != '0'  LIMIT $start_index, $items_per_page");
+    $result = $pdo->query("SELECT * FROM user WHERE affiliatescount != '0'  LIMIT $start_index, $items_per_page");
     $keyboardlists = [
         'inline_keyboard' => [],
     ];
@@ -4367,7 +4364,7 @@ elseif ($datain == "systemsms") {
         ['text' => $textbotlang['keyboard']['username'], 'callback_data' => "username"],
         ['text' => $textbotlang['keyboard']['userId'], 'callback_data' => "iduser"]
     ];
-    while ($row = mysqli_fetch_assoc($result)) {
+    while ($row = ($result)->fetch(PDO::FETCH_ASSOC)) {
         $keyboardlists['inline_keyboard'][] = [
             [
                 'text' => $textbotlang['Admin']['manageUser']['manageUserBtn'],
@@ -4406,7 +4403,7 @@ elseif ($datain == "systemsms") {
         $next_page = $page - 1;
     }
     $start_index = ($next_page - 1) * $items_per_page;
-    $result = mysqli_query($connect, "SELECT * FROM user WHERE affiliatescount != '0'  LIMIT $start_index, $items_per_page");
+    $result = $pdo->query("SELECT * FROM user WHERE affiliatescount != '0'  LIMIT $start_index, $items_per_page");
     $keyboardlists = [
         'inline_keyboard' => [],
     ];
@@ -4415,7 +4412,7 @@ elseif ($datain == "systemsms") {
         ['text' => $textbotlang['keyboard']['username'], 'callback_data' => "username"],
         ['text' => $textbotlang['keyboard']['userId'], 'callback_data' => "iduser"]
     ];
-    while ($row = mysqli_fetch_assoc($result)) {
+    while ($row = ($result)->fetch(PDO::FETCH_ASSOC)) {
         $keyboardlists['inline_keyboard'][] = [
             [
                 'text' => $textbotlang['Admin']['manageUser']['manageUserBtn'],
@@ -4467,12 +4464,11 @@ elseif ($datain == "systemsms") {
     }
     $dateacc = date('Y/m/d H:i:s');
     $randomString = bin2hex(random_bytes(5));
-    $stmt = $connect->prepare("INSERT INTO Payment_report (id_user,id_order,time,price,payment_Status,Payment_Method,id_invoice) VALUES (?,?,?,?,?,?,?)");
+    $stmt = $pdo->prepare("INSERT INTO Payment_report (id_user,id_order,time,price,payment_Status,Payment_Method,id_invoice) VALUES (?,?,?,?,?,?,?)");
     $payment_Status = "paid";
     $Payment_Method = "add balance by admin";
     $invoice = null;
-    $stmt->bind_param("sssssss", $user['Processing_value'], $randomString, $dateacc, $text, $payment_Status, $Payment_Method, $invoice);
-    $stmt->execute();
+    $stmt->execute([$user['Processing_value'], $randomString, $dateacc, $text, $payment_Status, $Payment_Method, $invoice]);
     sendmessage($from_id, $textbotlang['Admin']['manageUser']['addBalanced'], $keyboardadmin, 'html');
     $Balance_user = select("user", "*", "id", $user['Processing_value'], "select");
     $Balance_add_user = $Balance_user['Balance'] + $text;
@@ -4514,12 +4510,11 @@ elseif ($datain == "systemsms") {
     }
     $dateacc = date('Y/m/d H:i:s');
     $randomString = bin2hex(random_bytes(5));
-    $stmt = $connect->prepare("INSERT INTO Payment_report (id_user,id_order,time,price,payment_Status,Payment_Method,id_invoice) VALUES (?,?,?,?,?,?,?)");
+    $stmt = $pdo->prepare("INSERT INTO Payment_report (id_user,id_order,time,price,payment_Status,Payment_Method,id_invoice) VALUES (?,?,?,?,?,?,?)");
     $payment_Status = "paid";
     $Payment_Method = "low balance by admin";
     $invoice = null;
-    $stmt->bind_param("sssssss", $user['Processing_value'], $randomString, $dateacc, $text, $payment_Status, $Payment_Method, $invoice);
-    $stmt->execute();
+    $stmt->execute([$user['Processing_value'], $randomString, $dateacc, $text, $payment_Status, $Payment_Method, $invoice]);
     sendmessage($from_id, $textbotlang['Admin']['manageUser']['lowBalanced'], $keyboardadmin, 'html');
     $Balance_user = select("user", "*", "id", $user['Processing_value'], "select");
     $Balance_add_user = $Balance_user['Balance'] - $text;
@@ -5625,17 +5620,17 @@ elseif ($datain == "systemsms") {
     $sheet = $spreadsheet->getActiveSheet();
 
     $sql = "SELECT * FROM user";
-    $result = $connect->query($sql);
+    $result = $pdo->query($sql);
 
     $col = 1;
-    $headers = array_keys($result->fetch_assoc());
+    $headers = array_keys($result->fetch(PDO::FETCH_ASSOC));
     foreach ($headers as $header) {
         $sheet->setCellValue([$col, 1], $header);
         $col++;
     }
 
     $row = 2;
-    while ($row_data = $result->fetch_assoc()) {
+    while ($row_data = $result->fetch(PDO::FETCH_ASSOC)) {
         $col = 1;
         foreach ($row_data as $value) {
             $sheet->setCellValue([$col, $row], $value);
@@ -5659,17 +5654,17 @@ elseif ($datain == "systemsms") {
     $sheet = $spreadsheet->getActiveSheet();
 
     $sql = "SELECT * FROM invoice";
-    $result = $connect->query($sql);
+    $result = $pdo->query($sql);
 
     $col = 1;
-    $headers = array_keys($result->fetch_assoc());
+    $headers = array_keys($result->fetch(PDO::FETCH_ASSOC));
     foreach ($headers as $header) {
         $sheet->setCellValue([$col, 1], $header);
         $col++;
     }
 
     $row = 2;
-    while ($row_data = $result->fetch_assoc()) {
+    while ($row_data = $result->fetch(PDO::FETCH_ASSOC)) {
         $col = 1;
         foreach ($row_data as $value) {
             $sheet->setCellValue([$col, $row], $value);
@@ -5693,17 +5688,17 @@ elseif ($datain == "systemsms") {
     $sheet = $spreadsheet->getActiveSheet();
 
     $sql = "SELECT * FROM Payment_report";
-    $result = $connect->query($sql);
+    $result = $pdo->query($sql);
 
     $col = 1;
-    $headers = array_keys($result->fetch_assoc());
+    $headers = array_keys($result->fetch(PDO::FETCH_ASSOC));
     foreach ($headers as $header) {
         $sheet->setCellValue([$col, 1], $header);
         $col++;
     }
 
     $row = 2;
-    while ($row_data = $result->fetch_assoc()) {
+    while ($row_data = $result->fetch(PDO::FETCH_ASSOC)) {
         $col = 1;
         foreach ($row_data as $value) {
             $sheet->setCellValue([$col, $row], $value);
@@ -8960,7 +8955,7 @@ if (isset($update["inline_query"])) {
     $page = 1;
     $items_per_page = 10;
     $start_index = ($page - 1) * $items_per_page;
-    $result = mysqli_query($connect, "SELECT * FROM invoice WHERE id_user = '$id_user'  LIMIT $start_index, $items_per_page");
+    $result = $pdo->query("SELECT * FROM invoice WHERE id_user = '$id_user'  LIMIT $start_index, $items_per_page");
     $keyboardlists = [
         'inline_keyboard' => [],
     ];
@@ -8969,7 +8964,7 @@ if (isset($update["inline_query"])) {
         ['text' => $textbotlang['keyboard']['serviceStatus'], 'callback_data' => "Status"],
         ['text' => $textbotlang['keyboard']['username'], 'callback_data' => "username"],
     ];
-    while ($row = mysqli_fetch_assoc($result)) {
+    while ($row = ($result)->fetch(PDO::FETCH_ASSOC)) {
         $keyboardlists['inline_keyboard'][] = [
             [
                 'text' => $textbotlang['keyboard']['viewInfo'],
@@ -9010,7 +9005,7 @@ if (isset($update["inline_query"])) {
         $next_page = $page + 1;
     }
     $start_index = ($next_page - 1) * $items_per_page;
-    $result = mysqli_query($connect, "SELECT * FROM invoice WHERE id_user = '$id_user'  LIMIT $start_index, $items_per_page");
+    $result = $pdo->query("SELECT * FROM invoice WHERE id_user = '$id_user'  LIMIT $start_index, $items_per_page");
     $keyboardlists = [
         'inline_keyboard' => [],
     ];
@@ -9019,7 +9014,7 @@ if (isset($update["inline_query"])) {
         ['text' => $textbotlang['keyboard']['serviceStatus'], 'callback_data' => "Status"],
         ['text' => $textbotlang['keyboard']['username'], 'callback_data' => "username"],
     ];
-    while ($row = mysqli_fetch_assoc($result)) {
+    while ($row = ($result)->fetch(PDO::FETCH_ASSOC)) {
         $keyboardlists['inline_keyboard'][] = [
             [
                 'text' => $textbotlang['keyboard']['viewInfo'],
@@ -9060,7 +9055,7 @@ if (isset($update["inline_query"])) {
         $next_page = $page - 1;
     }
     $start_index = ($next_page - 1) * $items_per_page;
-    $result = mysqli_query($connect, "SELECT * FROM invoice WHERE id_user = '$id_user'  LIMIT $start_index, $items_per_page");
+    $result = $pdo->query("SELECT * FROM invoice WHERE id_user = '$id_user'  LIMIT $start_index, $items_per_page");
     $keyboardlists = [
         'inline_keyboard' => [],
     ];
@@ -9069,7 +9064,7 @@ if (isset($update["inline_query"])) {
         ['text' => $textbotlang['keyboard']['serviceStatus'], 'callback_data' => "Status"],
         ['text' => $textbotlang['keyboard']['username'], 'callback_data' => "username"],
     ];
-    while ($row = mysqli_fetch_assoc($result)) {
+    while ($row = ($result)->fetch(PDO::FETCH_ASSOC)) {
         $keyboardlists['inline_keyboard'][] = [
             [
                 'text' => $textbotlang['keyboard']['viewInfo'],
@@ -9104,7 +9099,7 @@ if (isset($update["inline_query"])) {
     $page = 1;
     $items_per_page = 10;
     $start_index = ($page - 1) * $items_per_page;
-    $result = mysqli_query($connect, "SELECT * FROM user WHERE cardpayment = '1'  LIMIT $start_index, $items_per_page");
+    $result = $pdo->query("SELECT * FROM user WHERE cardpayment = '1'  LIMIT $start_index, $items_per_page");
     $keyboardlists = [
         'inline_keyboard' => [],
     ];
@@ -9113,7 +9108,7 @@ if (isset($update["inline_query"])) {
         ['text' => $textbotlang['keyboard']['username'], 'callback_data' => "username"],
         ['text' => $textbotlang['keyboard']['userId'], 'callback_data' => "iduser"]
     ];
-    while ($row = mysqli_fetch_assoc($result)) {
+    while ($row = ($result)->fetch(PDO::FETCH_ASSOC)) {
         $keyboardlists['inline_keyboard'][] = [
             [
                 'text' => $textbotlang['Admin']['manageUser']['manageUserBtn'],
@@ -9160,7 +9155,7 @@ if (isset($update["inline_query"])) {
         $next_page = $page + 1;
     }
     $start_index = ($next_page - 1) * $items_per_page;
-    $result = mysqli_query($connect, "SELECT * FROM user WHERE cardpayment = '1'  LIMIT $start_index, $items_per_page");
+    $result = $pdo->query("SELECT * FROM user WHERE cardpayment = '1'  LIMIT $start_index, $items_per_page");
     $keyboardlists = [
         'inline_keyboard' => [],
     ];
@@ -9169,7 +9164,7 @@ if (isset($update["inline_query"])) {
         ['text' => $textbotlang['keyboard']['username'], 'callback_data' => "username"],
         ['text' => $textbotlang['keyboard']['userId'], 'callback_data' => "iduser"]
     ];
-    while ($row = mysqli_fetch_assoc($result)) {
+    while ($row = ($result)->fetch(PDO::FETCH_ASSOC)) {
         $keyboardlists['inline_keyboard'][] = [
             [
                 'text' => $textbotlang['Admin']['manageUser']['manageUserBtn'],
@@ -9208,7 +9203,7 @@ if (isset($update["inline_query"])) {
         $next_page = $page - 1;
     }
     $start_index = ($next_page - 1) * $items_per_page;
-    $result = mysqli_query($connect, "SELECT * FROM user WHERE cardpayment = '1'  LIMIT $start_index, $items_per_page");
+    $result = $pdo->query("SELECT * FROM user WHERE cardpayment = '1'  LIMIT $start_index, $items_per_page");
     $keyboardlists = [
         'inline_keyboard' => [],
     ];
@@ -9217,7 +9212,7 @@ if (isset($update["inline_query"])) {
         ['text' => $textbotlang['keyboard']['username'], 'callback_data' => "username"],
         ['text' => $textbotlang['keyboard']['userId'], 'callback_data' => "iduser"]
     ];
-    while ($row = mysqli_fetch_assoc($result)) {
+    while ($row = ($result)->fetch(PDO::FETCH_ASSOC)) {
         $keyboardlists['inline_keyboard'][] = [
             [
                 'text' => $textbotlang['Admin']['manageUser']['manageUserBtn'],
@@ -10379,7 +10374,7 @@ if ($datain == "settimecornday" && $adminrulecheck['rule'] == "administrator") {
     $page = 1;
     $items_per_page = 10;
     $start_index = ($page - 1) * $items_per_page;
-    $result = mysqli_query($connect, "SELECT * FROM user WHERE Balance < 0  LIMIT $start_index, $items_per_page");
+    $result = $pdo->query("SELECT * FROM user WHERE Balance < 0  LIMIT $start_index, $items_per_page");
     $keyboardlists = [
         'inline_keyboard' => [],
     ];
@@ -10388,7 +10383,7 @@ if ($datain == "settimecornday" && $adminrulecheck['rule'] == "administrator") {
         ['text' => $textbotlang['keyboard']['username'], 'callback_data' => "username"],
         ['text' => $textbotlang['keyboard']['userId'], 'callback_data' => "iduser"]
     ];
-    while ($row = mysqli_fetch_assoc($result)) {
+    while ($row = ($result)->fetch(PDO::FETCH_ASSOC)) {
         $keyboardlists['inline_keyboard'][] = [
             [
                 'text' => $textbotlang['Admin']['manageUser']['manageUserBtn'],
@@ -10431,7 +10426,7 @@ if ($datain == "settimecornday" && $adminrulecheck['rule'] == "administrator") {
         $next_page = $page + 1;
     }
     $start_index = ($next_page - 1) * $items_per_page;
-    $result = mysqli_query($connect, "SELECT * FROM user WHERE Balance < 0  LIMIT $start_index, $items_per_page");
+    $result = $pdo->query("SELECT * FROM user WHERE Balance < 0  LIMIT $start_index, $items_per_page");
     $keyboardlists = [
         'inline_keyboard' => [],
     ];
@@ -10440,7 +10435,7 @@ if ($datain == "settimecornday" && $adminrulecheck['rule'] == "administrator") {
         ['text' => $textbotlang['keyboard']['username'], 'callback_data' => "username"],
         ['text' => $textbotlang['keyboard']['userId'], 'callback_data' => "iduser"]
     ];
-    while ($row = mysqli_fetch_assoc($result)) {
+    while ($row = ($result)->fetch(PDO::FETCH_ASSOC)) {
         $keyboardlists['inline_keyboard'][] = [
             [
                 'text' => $textbotlang['Admin']['manageUser']['manageUserBtn'],
@@ -10486,7 +10481,7 @@ if ($datain == "settimecornday" && $adminrulecheck['rule'] == "administrator") {
         $next_page = $page - 1;
     }
     $start_index = ($next_page - 1) * $items_per_page;
-    $result = mysqli_query($connect, "SELECT * FROM user WHERE Balance < 0  LIMIT $start_index, $items_per_page");
+    $result = $pdo->query("SELECT * FROM user WHERE Balance < 0  LIMIT $start_index, $items_per_page");
     $keyboardlists = [
         'inline_keyboard' => [],
     ];
@@ -10495,7 +10490,7 @@ if ($datain == "settimecornday" && $adminrulecheck['rule'] == "administrator") {
         ['text' => $textbotlang['keyboard']['username'], 'callback_data' => "username"],
         ['text' => $textbotlang['keyboard']['userId'], 'callback_data' => "iduser"]
     ];
-    while ($row = mysqli_fetch_assoc($result)) {
+    while ($row = ($result)->fetch(PDO::FETCH_ASSOC)) {
         $keyboardlists['inline_keyboard'][] = [
             [
                 'text' => $textbotlang['Admin']['manageUser']['manageUserBtn'],

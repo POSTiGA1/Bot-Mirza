@@ -434,14 +434,12 @@ if ($user['step'] == "createusertest" || preg_match('/locationtest_(.*)/', $data
         'volume' => false,
         'time' => false,
     ));
-    $stmt = $connect->prepare("INSERT IGNORE INTO invoice (id_user, id_invoice, username,time_sell, Service_location, name_product, price_product, Volume, Service_time,Status,bottype,notifctions) VALUES (?, ?, ?, ?, ?, ?, ?,?,?,?,?,?)");
+    $stmt = $pdo->prepare("INSERT IGNORE INTO invoice (id_user, id_invoice, username,time_sell, Service_location, name_product, price_product, Volume, Service_time,Status,bottype,notifctions) VALUES (?, ?, ?, ?, ?, ?, ?,?,?,?,?,?)");
     $Status = "active";
     $info_product['name_product'] = "سرویس تست";
     $info_product['price_product'] = "0";
     $Status = "active";
-    $stmt->bind_param("ssssssssssss", $from_id, $randomString, $username_ac, $date, $marzban_list_get['name_panel'], $info_product['name_product'], $info_product['price_product'], $marzban_list_get['val_usertest'], $marzban_list_get['time_usertest'], $Status, $ApiToken, $notifctions);
-    $stmt->execute();
-    $stmt->close();
+    $stmt->execute([$from_id, $randomString, $username_ac, $date, $marzban_list_get['name_panel'], $info_product['name_product'], $info_product['price_product'], $marzban_list_get['val_usertest'], $marzban_list_get['time_usertest'], $Status, $ApiToken, $notifctions]);
     $dataoutput = $ManagePanel->createUser($marzban_list_get['name_panel'], "usertest", $username_ac, $datac);
     if ($dataoutput['username'] == null) {
         $dataoutput['msg'] = json_encode($dataoutput['msg']);
@@ -589,13 +587,13 @@ if ($text == $text_bot_var['btn_keyboard']['buy'] && $setting['active_step_note'
     step("statusnamecustom", $from_id);
     return;
 } elseif ($text == $text_bot_var['btn_keyboard']['buy'] || $user['step'] == "statusnamecustom") {
-    $locationproduct = mysqli_query($connect, "SELECT * FROM marzban_panel  WHERE status = 'active' AND (agent = '{$userbot['agent']}' OR agent = 'all')");
-    if (mysqli_num_rows($locationproduct) == 0) {
+    $locationproduct = $pdo->query("SELECT * FROM marzban_panel  WHERE status = 'active' AND (agent = '{$userbot['agent']}' OR agent = 'all')");
+    if (($locationproduct)->rowCount() == 0) {
         sendmessage($from_id, $textbotlang['Admin']['managepanel']['nullpanel'], null, 'HTML');
         return;
     }
-    if (mysqli_num_rows($locationproduct) == 1) {
-        $location = mysqli_fetch_assoc($locationproduct)['name_panel'];
+    if (($locationproduct)->rowCount() == 1) {
+        $location = ($locationproduct)->fetch(PDO::FETCH_ASSOC)['name_panel'];
         $locationproduct = select("marzban_panel", "*", "name_panel", $location, "select");
         $query = "SELECT * FROM product WHERE (Location = '{$locationproduct['name_panel']}' OR Location = '/all')AND agent= '{$userbot['agent']}'";
         $stmt = $pdo->prepare($query);
@@ -1024,11 +1022,9 @@ if ($text == $text_bot_var['btn_keyboard']['buy'] && $setting['active_step_note'
         'volume' => false,
         'time' => false,
     ));
-    $stmt = $connect->prepare("INSERT IGNORE INTO invoice (id_user, id_invoice, username,time_sell, Service_location, name_product, price_product, Volume, Service_time,Status,bottype,note,notifctions) VALUES (?, ?, ?, ?, ?, ?, ?, ?,?,?,?,?,?)");
+    $stmt = $pdo->prepare("INSERT IGNORE INTO invoice (id_user, id_invoice, username,time_sell, Service_location, name_product, price_product, Volume, Service_time,Status,bottype,note,notifctions) VALUES (?, ?, ?, ?, ?, ?, ?, ?,?,?,?,?,?)");
     $Status = "unpaid";
-    $stmt->bind_param("sssssssssssss", $from_id, $randomString, $username_ac, $date, $marzban_list_get['name_panel'], $datafactor['name_product'], $datafactor['price_product'], $datafactor['Volume_constraint'], $datafactor['Service_time'], $Status, $ApiToken, $userdate['note'], $notifctions);
-    $stmt->execute();
-    $stmt->close();
+    $stmt->execute([$from_id, $randomString, $username_ac, $date, $marzban_list_get['name_panel'], $datafactor['name_product'], $datafactor['price_product'], $datafactor['Volume_constraint'], $datafactor['Service_time'], $Status, $ApiToken, $userdate['note'], $notifctions]);
     if ($datafactor['price_product'] > $user['Balance'] && intval($datafactor['price_product']) != 0) {
         $marzbandirectpay = select("shopSetting", "*", "Namevalue", "statusdirectpabuy", "select")['value'];
         $Balance_prim = $datafactor['price_product'] - $user['Balance'];
@@ -1273,12 +1269,11 @@ $textonebuy
     }
     $dateacc = date('Y/m/d H:i:s');
     $randomString = bin2hex(random_bytes(5));
-    $stmt = $connect->prepare("INSERT INTO Payment_report (id_user,id_order,time,price,payment_Status,Payment_Method,id_invoice,bottype) VALUES (?,?,?,?,?,?,?,?)");
+    $stmt = $pdo->prepare("INSERT INTO Payment_report (id_user,id_order,time,price,payment_Status,Payment_Method,id_invoice,bottype) VALUES (?,?,?,?,?,?,?,?)");
     $payment_Status = "Unpaid";
     $Payment_Method = "cart to cart";
     $invoice = "0 | 0";
-    $stmt->bind_param("ssssssss", $from_id, $randomString, $dateacc, $text, $payment_Status, $Payment_Method, $invoice, $ApiToken);
-    $stmt->execute();
+    $stmt->execute([$from_id, $randomString, $dateacc, $text, $payment_Status, $Payment_Method, $invoice, $ApiToken]);
     sendmessage($from_id, $setting['cart_info'], $backuser, 'HTML');
     step("getresidcart", $from_id);
     savedata("clear", "id_order", $randomString);
@@ -1799,7 +1794,7 @@ $output
         }
         return;
     }
-    $stmt = $connect->prepare("INSERT IGNORE INTO service_other (id_user, username,value,type,time,price,output) VALUES (?, ?, ?, ?,?,?,?)");
+    $stmt = $pdo->prepare("INSERT IGNORE INTO service_other (id_user, username,value,type,time,price,output) VALUES (?, ?, ?, ?,?,?,?)");
     $dateacc = date('Y/m/d H:i:s');
     $value = $datafactor['Volume_constraint'] . "_" . $datafactor['Service_time'];
     $value = json_encode(array(
@@ -1811,9 +1806,7 @@ $output
         'id_order' => $nameloc['id_invoice']
     ));
     $type = "extend_user";
-    $stmt->bind_param("sssssss", $from_id, $nameloc['username'], $value, $type, $dateacc, $datafactor['price_product'], json_encode($extend));
-    $stmt->execute();
-    $stmt->close();
+    $stmt->execute([$from_id, $nameloc['username'], $value, $type, $dateacc, $datafactor['price_product'], json_encode($extend)]);
     update("invoice", "Status", "active", "id_invoice", $id_invoice);
     if (intval($datafactor['price_product']) != 0) {
         $Balance_prim = $user['Balance'] - $datafactor['price_product'];

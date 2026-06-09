@@ -11,8 +11,8 @@ $setting = select("setting", "*");
 $paymentreports = select("topicid","idreport","report","paymentreport","select")['idreport'];
 
 function statusplisio($tx_id){
-    global $connect;
-$apinowpayments = mysqli_fetch_assoc(mysqli_query($connect, "SELECT (ValuePay) FROM PaySetting WHERE NamePay = 'apinowpayment'"))['ValuePay'];
+    global $pdo;
+$apinowpayments = ($pdo->query("SELECT (ValuePay) FROM PaySetting WHERE NamePay = 'apinowpayment'"))->fetch(PDO::FETCH_ASSOC)['ValuePay'];
 $api_key = $apinowpayments;
 $url = 'https://api.plisio.net/api/v1/operations?';
 $url .= '&api_key=' . urlencode($api_key);
@@ -24,9 +24,9 @@ return json_decode($response,true);
 curl_close($ch);
 
 }
-$list_service = mysqli_query($connect, "SELECT * FROM Payment_report WHERE payment_Status = 'Unpaid' AND Payment_Method = 'plisio'");
-while ($row = mysqli_fetch_assoc($list_service)) {
-    $Payment_report = mysqli_fetch_assoc(mysqli_query($connect, "SELECT * FROM Payment_report WHERE id_order = '{$row['id_order']}' LIMIT 1"));
+$list_service = $pdo->query("SELECT * FROM Payment_report WHERE payment_Status = 'Unpaid' AND Payment_Method = 'plisio'");
+while ($row = ($list_service)->fetch(PDO::FETCH_ASSOC)) {
+    $Payment_report = ($pdo->query("SELECT * FROM Payment_report WHERE id_order = '{$row['id_order']}' LIMIT 1"))->fetch(PDO::FETCH_ASSOC);
     $textbotlang = languagechange();
     if ($Payment_report['payment_Status'] == "paid")continue;
     if(!isset($Payment_report['dec_not_confirmed']) or $Payment_report['dec_not_confirmed'] == null)continue;
@@ -40,7 +40,7 @@ while ($row = mysqli_fetch_assoc($list_service)) {
     if (isset($StatusPayment['data']['operations'][0]['status']) && $StatusPayment['data']['operations'][0]['status'] == "completed") {
         DirectPayment($Payment_report['id_order'],"../images.jpg");
         $pricecashback = select("PaySetting", "ValuePay", "NamePay", "chashbackplisio","select")['ValuePay'];
-    $Balance_id = mysqli_fetch_assoc(mysqli_query($connect, "SELECT * FROM user WHERE id = '{$Payment_report['id_user']}' LIMIT 1"));
+    $Balance_id = ($pdo->query("SELECT * FROM user WHERE id = '{$Payment_report['id_user']}' LIMIT 1"))->fetch(PDO::FETCH_ASSOC);
     if($pricecashback != "0"){
         $result = ($Payment_report['price'] * $pricecashback) / 100;
         $Balance_confrim = intval($Balance_id['Balance']) +$result;
