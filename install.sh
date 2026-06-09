@@ -276,6 +276,9 @@ GIT_REPO="mahdiMGF2/mirzabot"
 LATEST_CACHE="/tmp/.mirza_latest_version"
 IP_CACHE="/tmp/.mirza_server_ip"
 
+# ── Resumable-install state engine ───────────────────────────
+# Survives reboots / network drops. Lets a failed install resume
+# from the last completed phase instead of starting from scratch.
 STATE_DIR="/root/confmirza"
 STATE_FILE="$STATE_DIR/.mirza_install_state"
 
@@ -320,6 +323,10 @@ has_resumable_state() {
 state_clear() { rm -f "$STATE_FILE" 2>/dev/null; }
 
 # ── apt/dpkg recovery ────────────────────────────────────────
+# A previous interrupted apt run (or Ubuntu's background
+# unattended-upgrades) can hold the dpkg lock, making the next
+# apt command hang forever. This waits for any LIVE apt to finish,
+# clears locks left by a DEAD process, then repairs dpkg state.
 apt_recover() {
     local i=0
     # 1) If a real apt/dpkg is running (e.g. unattended-upgrades), wait for it
@@ -701,6 +708,73 @@ function show_logo() {
     resources_section
 }
 
+# Renew (or issue) the SSL certificate for the bot's domain.
+function renew_ssl() {
+    clear
+    banner
+    _sec "Renew SSL certificate"
+
+    # 1) Detect the bot domain: prefer config.php, then saved install state
+    local cfg="/var/www/html/mirzaprobotconfig/config.php"
+    local domain=""
+    if [ -f "$cfg" ]; then
+        domain=$(grep -E "\\\$domainhosts" "$cfg" 2>/dev/null | head -1 | cut -d"'" -f2)
+    fi
+    [ -z "$domain" ] && domain="$(state_get DOMAIN)"
+    if [ -z "$domain" ]; then
+        printf "  ${C_PROMPT}❯${CR} Enter the bot domain: "
+        read -r domain
+    fi
+    if [ -z "$domain" ]; then
+        echo -e "  ${C_BAD}●${CR} ${C_BAD}No domain found. Aborting.${CR}"
+        sleep 1; show_menu; return 1
+    fi
+    _kv "Domain" "${C_KEY}${domain}${CR}"
+
+    if ! command -v certbot >/dev/null 2>&1; then
+        echo -e "  ${C_BAD}●${CR} ${C_BAD}certbot is not installed. Install Mirza first.${CR}"
+        sleep 1; show_menu; return 1
+    fi
+
+    # Show current expiry, if a certificate already exists
+    local certfile="/etc/letsencrypt/live/${domain}/cert.pem"
+    if [ -f "$certfile" ]; then
+        local exp
+        exp=$(openssl x509 -enddate -noout -in "$certfile" 2>/dev/null | cut -d= -f2)
+        [ -n "$exp" ] && _kv "Expires" "${C_DIM}${exp}${CR}"
+    else
+        echo -e "  ${C_WARN}!${CR} ${C_WARN}No existing certificate found - a new one will be issued.${CR}"
+    fi
+    echo ""
+
+    # 2) Optional force (Let's Encrypt normally renews only within ~30 days of expiry)
+    printf "  ${C_PROMPT}❯${CR} Force renewal now even if not near expiry? ${C_DIM}[y/N]${CR}: "
+    read -r _force
+    local force_flag=""
+    [[ "$_force" =~ ^[Yy]$ ]] && force_flag="--force-renewal"
+    echo ""
+
+    # Use the apache authenticator so it works while Apache is running (no downtime).
+    # certonly updates the existing cert lineage in place; Apache already points at it.
+    run_step "Renewing certificate for ${domain}" \
+        "certbot certonly --apache --non-interactive --agree-tos --register-unsafely-without-email --keep-until-expiring --cert-name '${domain}' -d '${domain}' ${force_flag}" \
+        || { show_step_error; echo -e "\n  ${C_BAD}●${CR} ${C_BAD}Renewal failed. See the details above.${CR}"; echo ""; printf "  ${C_PROMPT}❯${CR} Press Enter to return to the menu... "; read -r _; show_menu; return 1; }
+
+    run_step "Reloading Apache" "systemctl reload apache2 2>/dev/null || systemctl restart apache2"
+
+    _sec "Done"
+    _kv "Domain" "${C_KEY}${domain}${CR}"
+    if [ -f "$certfile" ]; then
+        local newexp
+        newexp=$(openssl x509 -enddate -noout -in "$certfile" 2>/dev/null | cut -d= -f2)
+        [ -n "$newexp" ] && _kv "Valid until" "${C_OK}${newexp}${CR}"
+    fi
+    echo ""
+    printf "  ${C_PROMPT}❯${CR} Press Enter to return to the menu... "
+    read -r _
+    show_menu
+}
+
 function show_menu() {
     show_logo
     _sec "Menu"
@@ -708,19 +782,21 @@ function show_menu() {
     _mi "2" "Update Mirza"
     _mi "3" "Remove Mirza"
     _mi "4" "Migrate: Free -> Pro (Beta)"
-    _mi "5" "Help & Parameters"
-    _mi "6" "Exit"
+    _mi "5" "Renew SSL certificate"
+    _mi "6" "Help & Parameters"
+    _mi "7" "Exit"
     _rule
     echo ""
-    printf  "  ${C_PROMPT}❯${CR} Select an option ${C_DIM}[1-6]${CR}: "
+    printf  "  ${C_PROMPT}❯${CR} Select an option ${C_DIM}[1-7]${CR}: "
     read -r option
     case $option in
         1) install_bot ;;
         2) update_bot ;;
         3) remove_bot ;;
         4) migrate_to_pro ;;
-        5) show_help_screen ;;
-        6) echo -e "\n${C_OK}Exiting...${CR}"; exit 0 ;;
+        5) renew_ssl ;;
+        6) show_help_screen ;;
+        7) echo -e "\n${C_OK}Exiting...${CR}"; exit 0 ;;
         *) echo -e "\n${C_BAD}Invalid option. Please try again.${CR}"; sleep 1; show_menu ;;
     esac
 }
@@ -735,6 +811,7 @@ function show_help_screen() {
     _kv "update" "${C_DIM}Update Mirza (choose channel / version)${CR}"
     _kv "remove" "${C_DIM}Remove Mirza and its services${CR}"
     _kv "migrate" "${C_DIM}Migrate Free -> Pro${CR}"
+    _kv "renew" "${C_DIM}Renew the bot domain SSL certificate${CR}"
     _kv "menu" "${C_DIM}Open this interactive panel (default)${CR}"
 
     _sec "Install parameters"
@@ -1958,6 +2035,7 @@ print_usage() {
     update             Update Mirza
     remove             Remove Mirza
     migrate            Migrate Free -> Pro
+    renew              Renew the bot domain SSL certificate
     menu               Show interactive menu (default)
 
   Options:
@@ -1984,7 +2062,7 @@ process_arguments() {
     local cmd="menu"
     # First non-flag token is the command
     case "$1" in
-        install|update|remove|migrate|menu) cmd="$1"; shift ;;
+        install|update|remove|migrate|renew|menu) cmd="$1"; shift ;;
         -h|--help) print_usage; exit 0 ;;
         "") cmd="menu" ;;
         --*) cmd="menu" ;;            # only flags given -> menu, but still parse flags
@@ -2012,6 +2090,7 @@ process_arguments() {
         update)  update_bot ;;
         remove)  remove_bot ;;
         migrate) migrate_to_pro ;;
+        renew)   renew_ssl ;;
         menu|*)  show_menu ;;
     esac
 }
