@@ -204,7 +204,7 @@ function KeyboardProduct($location, $query, $pricediscount, $datakeyboard, $stat
     }
     if ($statuscustom) $product['inline_keyboard'][] = [['text' => $textbotlang['users']['customsellvolume']['title'], 'callback_data' => $customvolume]];
     $product['inline_keyboard'][] = [
-        ['text' => $textbotlang['users']['stateus']['backinfo'], 'callback_data' => $backuser],
+        ['text' => $textbotlang['users']['status']['backinfo'], 'callback_data' => $backuser],
     ];
     return json_encode($product);
 }
