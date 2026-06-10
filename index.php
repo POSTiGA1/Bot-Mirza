@@ -3710,11 +3710,11 @@ if ($user['step'] == "createusertest" || preg_match('/locationtest_(.*)/', $data
         $info_product['Service_time'] = $parts[1];
         $info_product['price_product'] = ($parts[2] * $custompricevalue) + ($parts[1] * $customtimevalueprice);
     } else {
-        $__q7 = $pdo->prepare("SELECT * FROM product WHERE code_product = ? AND (Location = ?or Location = '/all') LIMIT 1");
-        $__q7->bindValue(1, $loc, PDO::PARAM_STR);
-        $__q7->bindValue(2, $userdate['name_panel'], PDO::PARAM_STR);
-        $__q7->execute();
-        $info_product = $__q7->fetch(PDO::FETCH_ASSOC);
+        $info_product = $pdo->prepare("SELECT * FROM product WHERE code_product = :code_product AND (Location = :location OR Location = '/all') LIMIT 1");
+        $info_product->bindValue(':code_product', $loc, PDO::PARAM_STR);
+        $info_product->bindValue(':location', $userdate['name_panel'], PDO::PARAM_STR);
+        $info_product->execute();
+        $info_product = $info_product->fetch(PDO::FETCH_ASSOC);
     }
     if (!isset($info_product['price_product'])) {
         sendmessage($from_id, $textbotlang['extracted']['index_php']['confirmError'], $keyboard, 'HTML');
