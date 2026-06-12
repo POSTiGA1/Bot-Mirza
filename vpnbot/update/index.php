@@ -1285,8 +1285,8 @@ $textonebuy
     $Confirm_pay = json_encode([
         'inline_keyboard' => [
             [
-                ['text' => $textbotlang['users']['Balance']['Confirmpaying'], 'callback_data' => "Confirm_pay_{$userdate['id_order']}"],
-                ['text' => $textbotlang['users']['Balance']['reject_pay'], 'callback_data' => "reject_pay_{$userdate['id_order']}"],
+                ['text' => $textbotlang['users']['Balance']['confirmPaying'], 'callback_data' => "Confirm_pay_{$userdate['id_order']}"],
+                ['text' => $textbotlang['users']['Balance']['rejectPay'], 'callback_data' => "reject_pay_{$userdate['id_order']}"],
             ]
         ]
     ]);

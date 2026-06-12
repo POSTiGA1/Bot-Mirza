@@ -281,11 +281,10 @@ switch ($data['actions']) {
             if ($user_info['number'] == "confrim number by admin") {
                 $numberphone = $textbotlang['hardcoded']['confirmedByAdmin'];
             }
-            $stmt = $pdo->prepare("SELECT * FROM invoice WHERE id_user = :id_user AND name_product != :mp1 AND (status = 'active' OR status = 'end_of_time'  OR status = 'end_of_volume' OR status = 'sendedwarn' OR Status = 'send_on_hold')");
-            $stmt->bindValue(':mp1', $textbotlang['Admin']['adminphp']['db_test_service_name'], PDO::PARAM_STR);
-            $stmt->execute([
-                ':id_user' => $user_info['id']
-            ]);
+            $stmt = $pdo->prepare("SELECT * FROM invoice WHERE id_user = :id_user AND name_product != :name_product AND (status = 'active' OR status = 'end_of_time'  OR status = 'end_of_volume' OR status = 'sendedwarn' OR Status = 'send_on_hold')");
+            $stmt->bindValue(':name_product', $textbotlang['Admin']['adminphp']['db_test_service_name'], PDO::PARAM_STR);
+            $stmt->bindValue(':id_user', $user_info['id'], PDO::PARAM_INT);
+            $stmt->execute();
             $countorder = $stmt->rowCount();
             $stmt = $pdo->prepare("SELECT * FROM Payment_report WHERE id_user = :from_id AND payment_Status = 'paid'");
             $stmt->execute([
