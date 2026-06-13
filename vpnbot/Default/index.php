@@ -1064,7 +1064,7 @@ if ($text == $text_bot_var['btn_keyboard']['buy'] && $setting['active_step_note'
     $dataoutput = $ManagePanel->createUser($marzban_list_get['name_panel'], $datafactor['code_product'], $username_ac, $datac);
     if ($dataoutput['username'] == null) {
         $dataoutput['msg'] = json_encode($dataoutput['msg']);
-        sendmessage($from_id, $textbotlang['users']['sell']['ErrorConfig'], $keyboard, 'HTML');
+        sendmessage($from_id, $textbotlang['users']['sell']['errorConfig'], $keyboard, 'HTML');
         $texterros = "⭕️ خطای ساخت اشتراک  در ربات نماینده
 ✍️ دلیل خطا : 
 {$dataoutput['msg']}
@@ -1367,7 +1367,7 @@ $textonebuy
         'disabled' => $textbotlang['users']['status']['disabled'],
         'expired' => $textbotlang['users']['status']['expired'],
         'on_hold' => $textbotlang['users']['status']['on_hold'],
-        'Unknown' => $textbotlang['users']['status']['Unknown'],
+        'Unknown' => $textbotlang['users']['status']['unknown'],
         'deactivev' => $textbotlang['users']['status']['disabled'],
     ][$status];
     #--------------[ expire ]---------------#
@@ -1378,7 +1378,7 @@ $textonebuy
     $output = $DataUserOut['data_limit'] - $DataUserOut['used_traffic'];
     $RemainingVolume = $DataUserOut['data_limit'] ? formatBytes($output) : "نامحدود";
     #---------------[ used_traffic ]--------------#
-    $usedTrafficGb = $DataUserOut['used_traffic'] ? formatBytes($DataUserOut['used_traffic']) : $textbotlang['users']['status']['Notconsumed'];
+    $usedTrafficGb = $DataUserOut['used_traffic'] ? formatBytes($DataUserOut['used_traffic']) : $textbotlang['users']['status']['notConsumed'];
     #--------------[ day ]---------------#
     $timeDiff = $DataUserOut['expire'] - time();
     if ($timeDiff < 0) {
@@ -1431,7 +1431,7 @@ $textonebuy
             'callback_data' => "extend_"
         ),
         'changelink' => array(
-            'text' => $textbotlang['users']['changelink']['btntitle'],
+            'text' => $textbotlang['users']['changeLink']['btnTitle'],
             'callback_data' => "changelink_"
         ),
     );
@@ -1884,7 +1884,7 @@ $output
     $keyboardextend = json_encode([
         'inline_keyboard' => [
             [
-                ['text' => $textbotlang['users']['changelink']['confirm'], 'callback_data' => "confirmchange_" . $nameloc['id_invoice']],
+                ['text' => $textbotlang['users']['changeLink']['confirm'], 'callback_data' => "confirmchange_" . $nameloc['id_invoice']],
             ],
             [
                 ['text' => $textbotlang['users']['status']['backinfo'], 'callback_data' => "product_" . $nameloc['id_invoice']],
