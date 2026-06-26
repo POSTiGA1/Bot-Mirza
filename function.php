@@ -1556,9 +1556,6 @@ function createInvoice($amount)
     ));
 
     $response = curl_exec($curl);
-
-    curl_close($curl);
-
     return json_decode($response, true);
 }
 function verifpay($id)
@@ -1584,7 +1581,6 @@ function verifpay($id)
 
     $response = curl_exec($curl);
 
-    curl_close($curl);
 
     return $response;
 }
@@ -1617,7 +1613,6 @@ function createInvoiceiranpay1($amount, $id_invoice)
     ));
 
     $response = curl_exec($curl);
-    curl_close($curl);
     return json_decode($response, true);
 }
 function sanitizeUserName($userName)
@@ -1890,4 +1885,19 @@ function check_active_btn($keyboard, $text_var)
         }
     }
     return $status;
+}
+function createqrcode($contents)
+{
+    $builder = new Builder(
+        writer: new PngWriter(),
+        writerOptions: [],
+        data: $contents,
+        encoding: new Encoding('UTF-8'),
+        errorCorrectionLevel: ErrorCorrectionLevel::High,
+        size: 500,
+        margin: 10,
+    );
+
+    $result = $builder->build();
+    return $result;
 }

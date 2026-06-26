@@ -259,8 +259,10 @@ class ManagePanel
                 }
             }
         } elseif ($Get_Data_Panel['type'] == "Manualsale") {
-            $statement = $pdo->prepare("SELECT * FROM manualsell WHERE codepanel = :code_panel AND status = 'active' AND codeproduct = :mp1 ORDER BY RAND() LIMIT 1");
-            $statement->execute(array(':code_panel' => $Get_Data_Panel['code_panel']));
+            $statement = $pdo->prepare("SELECT * FROM manualsell WHERE codepanel = :code_panel AND status = 'active' AND codeproduct = :code_product ORDER BY RAND() LIMIT 1");
+            $statement->bindParam(":code_panel", $Get_Data_Panel['code_panel']);
+            $statement->bindParam(":code_product", $code_product);
+            $statement->execute();
             $configman = $statement->fetch(PDO::FETCH_ASSOC);
             $Output['status'] = 'successful';
             $Output['username'] = $usernameC;
