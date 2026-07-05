@@ -1443,6 +1443,11 @@ class ManagePanel
                 "tgId" => 0,
                 "enable" => isset($config['enable']) ? $config['enable'] : true,
             );
+            if (!empty($config['id']))
+                $data['id'] = $config['id'];
+            if (!empty($config['subId']))
+                $data['subId'] = $config['subId'];
+
             $modify = updateClient($Get_Data_Panel, $username, $data);
             attach_service($Get_Data_Panel, $username, json_decode($Get_Data_Panel['inbounds']));
             if (!empty($modify['error'])) {
