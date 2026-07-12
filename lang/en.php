@@ -12,6 +12,7 @@ return [
             'msg_closed'   => 'Closed.',
             'langs'        => ['fa' => '🇮🇷 فارسی', 'en' => '🇬🇧 English', 'ru' => '🇷🇺 Русский', 'zh' => '🇨🇳 中文'],
             'items'        => [
+                ['label' => 'Welcome text', 'key' => 'users.text_start'],
                 ['label' => 'Button: Buy subscription', 'key' => 'textbot.sell'],
                 ['label' => 'Button: My services', 'key' => 'textbot.purchasedServices'],
                 ['label' => 'Button: Renew service', 'key' => 'textbot.extend'],

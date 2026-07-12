@@ -12,6 +12,7 @@ return [
             'msg_closed'   => 'Закрыто.',
             'langs'        => ['fa' => '🇮🇷 فارسی', 'en' => '🇬🇧 English', 'ru' => '🇷🇺 Русский', 'zh' => '🇨🇳 中文'],
             'items'        => [
+                ['label' => 'Текст приветствия', 'key' => 'users.text_start'],
                 ['label' => 'Кнопка: Купить подписку', 'key' => 'textbot.sell'],
                 ['label' => 'Кнопка: Мои сервисы', 'key' => 'textbot.purchasedServices'],
                 ['label' => 'Кнопка: Продлить сервис', 'key' => 'textbot.extend'],

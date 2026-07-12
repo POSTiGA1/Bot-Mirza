@@ -12,6 +12,7 @@ return [
             'msg_closed'   => '已关闭。',
             'langs'        => ['fa' => '🇮🇷 فارسی', 'en' => '🇬🇧 English', 'ru' => '🇷🇺 Русский', 'zh' => '🇨🇳 中文'],
             'items'        => [
+                ['label' => '欢迎文本', 'key' => 'users.text_start'],
                 ['label' => '按钮：购买订阅', 'key' => 'textbot.sell'],
                 ['label' => '按钮：我的服务', 'key' => 'textbot.purchasedServices'],
                 ['label' => '按钮：续费服务', 'key' => 'textbot.extend'],

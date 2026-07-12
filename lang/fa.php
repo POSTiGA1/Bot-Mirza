@@ -12,6 +12,7 @@ return [
             'msg_closed'   => 'بسته شد.',
             'langs'        => ['fa' => '🇮🇷 فارسی', 'en' => '🇬🇧 English', 'ru' => '🇷🇺 Русский', 'zh' => '🇨🇳 中文'],
             'items'        => [
+                ['label' => 'متن خوش‌آمدید', 'key' => 'users.text_start'],
                 ['label' => 'دکمه: خرید اشتراک', 'key' => 'textbot.sell'],
                 ['label' => 'دکمه: سرویس‌های من', 'key' => 'textbot.purchasedServices'],
                 ['label' => 'دکمه: تمدید سرویس', 'key' => 'textbot.extend'],
