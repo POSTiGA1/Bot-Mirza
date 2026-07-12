@@ -918,6 +918,121 @@ function backup_bot() {
     show_menu
 }
 
+function import_bot() {
+    clear
+    banner
+    _sec "Import Database"
+
+    CONFIG_PATH="/var/www/html/mirzaprobotconfig/config.php"
+    if [ ! -f "$CONFIG_PATH" ]; then
+        printf "    ${C_BAD}●${CR} ${C_BAD}Mirza is not installed. config.php not found.${CR}\n"
+        echo ""
+        printf "  ${C_PROMPT}❯${CR} Press Enter to return to the menu... "
+        read -r _
+        show_menu
+        return 1
+    fi
+
+    local dbhost dbname dbuser dbpass
+    dbhost=$(grep '^\$dbhost' "$CONFIG_PATH" | cut -d"'" -f2)
+    dbname=$(grep '^\$dbname' "$CONFIG_PATH" | cut -d"'" -f2)
+    dbuser=$(grep '^\$usernamedb' "$CONFIG_PATH" | cut -d"'" -f2)
+    dbpass=$(grep '^\$passworddb' "$CONFIG_PATH" | cut -d"'" -f2)
+    [ -z "$dbhost" ] && dbhost="localhost"
+
+    if [ -z "$dbname" ] || [ -z "$dbuser" ] || [ -z "$dbpass" ]; then
+        printf "    ${C_BAD}●${CR} ${C_BAD}Could not read database credentials from config.php${CR}\n"
+        echo ""
+        printf "  ${C_PROMPT}❯${CR} Press Enter to return to the menu... "
+        read -r _
+        show_menu
+        return 1
+    fi
+
+    _kv "Database" "${C_DIM}${dbname}${CR}"
+    _kv "DB User" "${C_DIM}${dbuser}${CR}"
+    _kv "DB Host" "${C_DIM}${dbhost}${CR}"
+    echo ""
+
+    echo -e "  ${C_DIM}Available backup files in /root/:${CR}"
+    local files=()
+    local i=1
+    while IFS= read -r f; do
+        files+=("$f")
+        local sz
+        sz=$(du -h "$f" 2>/dev/null | awk '{print $1}')
+        printf "    ${C_KEY}[%d]${CR}  ${C_TXT}%s${CR}  ${C_DIM}(%s)${CR}\n" "$i" "$(basename "$f")" "$sz"
+        i=$((i + 1))
+    done < <(find /root -maxdepth 1 -name 'mirza_backup_*.sql' -type f 2>/dev/null | sort -r)
+
+    if [ "${#files[@]}" -eq 0 ]; then
+        printf "    ${C_WARN}!${CR} ${C_WARN}No backup files found in /root/${CR}\n"
+    fi
+
+    echo ""
+    printf "    ${C_KEY}[0]${CR}  ${C_TXT}Enter a custom file path${CR}\n"
+    echo ""
+    printf "  ${C_PROMPT}❯${CR} Select a file ${C_DIM}[0-%d]${CR} or enter path: " "${#files[@]}"
+    read -r choice
+
+    local sql_file=""
+    if [[ "$choice" =~ ^[0-9]+$ ]] && [ "$choice" -ge 1 ] && [ "$choice" -le "${#files[@]}" ]; then
+        sql_file="${files[$((choice - 1))]}"
+    elif [ "$choice" = "0" ] || [ -z "$choice" ]; then
+        printf "  ${C_PROMPT}❯${CR} Enter the full path to the .sql file: "
+        read -r sql_file
+    else
+        sql_file="$choice"
+    fi
+
+    if [ -z "$sql_file" ] || [ ! -f "$sql_file" ]; then
+        printf "\n    ${C_BAD}●${CR} ${C_BAD}File not found: %s${CR}\n" "$sql_file"
+        echo ""
+        printf "  ${C_PROMPT}❯${CR} Press Enter to return to the menu... "
+        read -r _
+        show_menu
+        return 1
+    fi
+
+    local file_size
+    file_size=$(du -h "$sql_file" 2>/dev/null | awk '{print $1}')
+    _kv "File" "${C_DIM}${sql_file}${CR}"
+    _kv "Size" "${C_DIM}${file_size}${CR}"
+    echo ""
+
+    printf "    ${C_WARN}!${CR} ${C_WARN}This will OVERWRITE the current database (${dbname}).${CR}\n"
+    printf "  ${C_PROMPT}❯${CR} Are you sure? ${C_DIM}[y/N]${CR}: "
+    read -r confirm
+    if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
+        printf "\n    ${C_DIM}Import cancelled.${CR}\n"
+        echo ""
+        printf "  ${C_PROMPT}❯${CR} Press Enter to return to the menu... "
+        read -r _
+        show_menu
+        return 0
+    fi
+    echo ""
+
+    run_step "Importing database (${dbname})" \
+        "mysql -h '$dbhost' -u '$dbuser' -p'$dbpass' '$dbname' < '$sql_file'" \
+        || { show_step_error; echo -e "\n  ${C_BAD}●${CR} ${C_BAD}Import failed. See details above.${CR}"; echo ""; printf "  ${C_PROMPT}❯${CR} Press Enter to return to the menu... "; read -r _; show_menu; return 1; }
+
+    local DOMAIN_NAME=""
+    if [ -f "$CONFIG_PATH" ]; then
+        DOMAIN_NAME=$(grep '^\$domainhosts' "$CONFIG_PATH" | cut -d"'" -f2 | cut -d'/' -f1)
+    fi
+    if [ -n "$DOMAIN_NAME" ]; then
+        run_step "Updating database tables" "curl -s 'https://${DOMAIN_NAME}/table.php' > /dev/null" || true
+    fi
+
+    echo ""
+    printf "    ${C_OK}✔${CR} ${C_OK}Database imported successfully from:${CR} ${C_KEY}${sql_file}${CR}\n"
+    echo ""
+    printf "  ${C_PROMPT}❯${CR} Press Enter to return to the menu... "
+    read -r _
+    show_menu
+}
+
 function show_menu() {
     show_logo
     _sec "Menu"
@@ -927,11 +1042,12 @@ function show_menu() {
     _mi "4" "Migrate: Free -> Pro (Beta)"
     _mi "5" "Renew SSL certificate"
     _mi "6" "Backup Database"
-    _mi "7" "Help & Parameters"
-    _mi "8" "Exit"
+    _mi "7" "Import Database  ${C_WARN}(Beta)${CR}"
+    _mi "8" "Help & Parameters"
+    _mi "9" "Exit"
     _rule
     echo ""
-    printf  "  ${C_PROMPT}❯${CR} Select an option ${C_DIM}[1-8]${CR}: "
+    printf  "  ${C_PROMPT}❯${CR} Select an option ${C_DIM}[1-9]${CR}: "
     read -r option
     case $option in
         1) install_bot ;;
@@ -940,8 +1056,9 @@ function show_menu() {
         4) migrate_to_pro ;;
         5) renew_ssl ;;
         6) backup_bot ;;
-        7) show_help_screen ;;
-        8) echo -e "\n${C_OK}Exiting...${CR}"; exit 0 ;;
+        7) import_bot ;;
+        8) show_help_screen ;;
+        9) echo -e "\n${C_OK}Exiting...${CR}"; exit 0 ;;
         *) echo -e "\n${C_BAD}Invalid option. Please try again.${CR}"; sleep 1; show_menu ;;
     esac
 }
@@ -958,6 +1075,7 @@ function show_help_screen() {
     _kv "migrate" "${C_DIM}Migrate Free -> Pro${CR}"
     _kv "renew" "${C_DIM}Renew the bot domain SSL certificate${CR}"
     _kv "backup" "${C_DIM}Backup database & send to Telegram${CR}"
+    _kv "import" "${C_DIM}Import database from SQL file (Beta)${CR}"
     _kv "menu" "${C_DIM}Open this interactive panel (default)${CR}"
 
     _sec "Install parameters"
@@ -981,6 +1099,7 @@ function show_help_screen() {
     printf "    ${C_KEY}mirza update --channel release${CR}\n"
     printf "    ${C_KEY}mirza remove${CR}\n"
     printf "    ${C_KEY}mirza backup${CR}\n"
+    printf "    ${C_KEY}mirza import${CR}\n"
 
     echo ""
     _rule
@@ -2187,6 +2306,7 @@ print_usage() {
     migrate            Migrate Free -> Pro
     renew              Renew the bot domain SSL certificate
     backup             Backup database & send to Telegram
+    import             Import database from SQL file (Beta)
     menu               Show interactive menu (default)
 
   Options:
@@ -2213,7 +2333,7 @@ process_arguments() {
     local cmd="menu"
     # First non-flag token is the command
     case "$1" in
-        install|update|remove|migrate|renew|backup|menu) cmd="$1"; shift ;;
+        install|update|remove|migrate|renew|backup|import|menu) cmd="$1"; shift ;;
         -h|--help) print_usage; exit 0 ;;
         "") cmd="menu" ;;
         --*) cmd="menu" ;;            # only flags given -> menu, but still parse flags
@@ -2243,6 +2363,7 @@ process_arguments() {
         migrate) migrate_to_pro ;;
         renew)   renew_ssl ;;
         backup)  backup_bot ;;
+        import)  import_bot ;;
         menu|*)  show_menu ;;
     esac
 }
