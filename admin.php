@@ -3672,6 +3672,26 @@ elseif ($datain == "systemsms") {
             $total_memory = round($result['total-memory'] / pow(1024, 3), 2);
             sendmessage($from_id, sprintf($textbotlang['Admin']['adminphp']['msg_time_name'], $result['platform'], $result['version'], $result['uptime'], $result['architecture-name'], $result['board-name'], $result['build-time'], $result['cpu'], $result['cpu-count'], $result['cpu-frequency'], $result['cpu-load'], $total_hdd_space, $free_hdd_space, $total_memory, $free_memory, $result['write-sect-since-reboot'], $result['write-sect-total']), $option_mikrotik, 'HTML');
         }
+    } elseif ($marzban_list_get['type'] == "rebeca") {
+        $Check_connection = Get_System_Stats_rebeca($marzban_list_get['name_panel']);
+        if (empty($Check_connection['error']) && (empty($Check_connection['status']) || $Check_connection['status'] < 400)) {
+            $ListSell = $pdo->prepare("SELECT COUNT(*) FROM invoice WHERE (status = 'active' OR status = 'end_of_time'  OR status = 'end_of_volume' OR status = 'sendedwarn' OR Status = 'send_on_hold') AND code_panel = :code_panel AND is_test = 0 AND bottype IS NULL");
+            $ListSell->bindParam(':code_panel', $marzban_list_get['code_panel']);
+            $ListSell->execute();
+            $ListSell = $ListSell->fetch(PDO::FETCH_ASSOC)['COUNT(*)'];
+            $ListSellSum = $pdo->prepare("SELECT SUM(price_product) FROM invoice WHERE (status = 'active' OR status = 'end_of_time'  OR status = 'end_of_volume' OR status = 'sendedwarn' OR Status = 'send_on_hold') AND code_panel = :code_panel AND is_test = 0 AND bottype IS NULL");
+            $ListSellSum->bindParam(':code_panel', $marzban_list_get['code_panel']);
+            $ListSellSum->execute();
+            $ListSellSUM = number_format($ListSellSum->fetch(PDO::FETCH_ASSOC)['SUM(price_product)'], 0);
+            $text_marzban = sprintf($textbotlang['Admin']['adminphp']['ok_select_panel_user_4'], $ListSell, $ListSellSUM, $marzban_list_get['agent']);
+            sendmessage($from_id, $text_marzban, $optionrebeca, 'HTML');
+        } elseif (!empty($Check_connection['status']) && $Check_connection['status'] == 401) {
+            $text_marzban = $textbotlang['Admin']['adminphp']['err_invalid_panel_token'];
+            sendmessage($from_id, $text_marzban, $optionrebeca, 'HTML');
+        } else {
+            $text_marzban = $textbotlang['Admin']['managepanel']['errorStatusPanel'] . json_encode($Check_connection);
+            sendmessage($from_id, $text_marzban, $optionrebeca, 'HTML');
+        }
     } else {
         sendmessage($from_id, $textbotlang['Admin']['adminphp']['ask_select_3'], $optionMarzban, 'HTML');
     }
@@ -8534,6 +8554,14 @@ if ($datain == "settimecornremove" && $adminrulecheck['rule'] == "administrator"
         }
         sendmessage($from_id, $textbotlang['Admin']['adminphp']['ok_success_set_4'], $optionX_ui_single, 'HTML');
         update("marzban_panel", "inbounds", json_encode($data['obj']['inboundIds']), "name_panel", $user['Processing_value']);
+    } elseif ($panel['type'] == "rebeca") {
+        $userdata = json_decode(getuser_rebeca($text, $user['Processing_value'])['body'], true);
+        if (!is_array($userdata) || !isset($userdata['service_id'])) {
+            sendmessage($from_id, $textbotlang['users']['stateus']['UserNotFound'], null, 'html');
+            return;
+        }
+        update("marzban_panel", "proxies", json_encode([$userdata['service_id']]), "name_panel", $user['Processing_value']);
+        sendmessage($from_id, $textbotlang['Admin']['adminphp']['ok_success_set_4'], $optionrebeca, 'HTML');
     } else {
         sendmessage($from_id, $textbotlang['Admin']['adminphp']['ok_success_set_4'], $optionMarzban, 'HTML');
     }
@@ -10815,7 +10843,7 @@ if ($datain == "settimecornday" && $adminrulecheck['rule'] == "administrator") {
     if (!in_array($bt_lang, ['fa', 'en', 'ru', 'zh'], true)) {
         $bt_lang = 'fa';
     }
-    sendmessage($from_id, "📌 متن جدید خود را ارسال کنید", $backadmin, 'HTML');
+    sendmessage($from_id, $textbotlang['Admin']['adminphp']['ask_send_new_text'], $backadmin, 'HTML');
     savedata("clear", "bt_lang", $bt_lang);
     savedata("save", "bt_key", $bt_key);
     step("get_new_text", $from_id);

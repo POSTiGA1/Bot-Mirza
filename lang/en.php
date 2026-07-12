@@ -1630,6 +1630,17 @@ Your panel statistics👇:
 User group:%s
         
 ⭕️ To manage the panel, select one of the options below',
+                        'ok_select_panel_user_4' => '
+Your panel statistics👇:
+
+🖥 Panel connection status: ✅ Panel is connected
+🛍 Total sales count on this panel: %s
+🛍 Total sales on this panel: %s Toman
+User group:%s
+
+⭕️ To manage the panel, select one of the options below',
+                        'err_invalid_panel_token' => '❌ Panel token is invalid',
+                        'ask_send_new_text' => '📌 Send your new text',
                         'msg_time_name' => '<b>📡 Your MikroTik system information:</b>
 
 <blockquote>
@@ -2408,6 +2419,7 @@ We hope you had a good experience with the ease and speed of your service. If yo
                 'qrBackground' => '🖼 QR code background',
                 'quickSetTimePrice' => '⏳ Quick time price setting',
                 'quickSetVolumePrice' => '🔋 Quick volume price setting',
+                'rebeca' => 'Rebeca',
                 'reWebhookAgentBots' => '🔗 Re-webhook agent bots',
                 'receiveMembershipGift' => '🎁 Receive membership gift',
                 'reconnectNode' => '♻️ Reconnect node',

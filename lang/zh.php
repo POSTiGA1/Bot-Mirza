@@ -1630,6 +1630,17 @@ nowpayments.io
 用户组：%s
         
 ⭕️ 要管理面板，请选择下方的一个选项',
+                        'ok_select_panel_user_4' => '
+您的面板统计👇：
+
+🖥 面板连接状态：✅ 面板已连接
+🛍 此面板总销售数量：%s
+🛍 此面板总销售额：%s 托曼
+用户组：%s
+
+⭕️ 要管理面板，请选择下方的一个选项',
+                        'err_invalid_panel_token' => '❌ 面板令牌无效',
+                        'ask_send_new_text' => '📌 发送您的新文本',
                         'msg_time_name' => '<b>📡 您的 MikroTik 系统信息：</b>
 
 <blockquote>
@@ -2408,6 +2419,7 @@ nowpayments.io
                 'qrBackground' => '🖼 二维码背景',
                 'quickSetTimePrice' => '⏳ 快速设置时间价格',
                 'quickSetVolumePrice' => '🔋 快速设置流量价格',
+                'rebeca' => 'Rebeca',
                 'reWebhookAgentBots' => '🔗 重新设置代理机器人 webhook',
                 'receiveMembershipGift' => '🎁 领取会员礼品',
                 'reconnectNode' => '♻️ 重新连接节点',
