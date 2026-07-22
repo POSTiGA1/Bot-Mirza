@@ -8511,11 +8511,7 @@ if ($datain == "settimecornremove" && $adminrulecheck['rule'] == "administrator"
                     unset($DataUserOut['proxies'][$key]['password']);
                 } elseif ($key == "trojan") {
                     unset($DataUserOut['proxies'][$key]['password']);
-                }elseif ($key == "wireguard") {
-                    unset($DataUserOut['proxy_settings'][$key]['private_key']);
-                    unset($DataUserOut['proxy_settings'][$key]['public_key']);
-                    unset($DataUserOut['proxy_settings'][$key]['peer_ips']);
-                }  else {
+                } else {
                     unset($DataUserOut['proxies'][$key]['id']);
                 }
                 if (count($DataUserOut['proxies'][$key]) == 0) {
@@ -8636,25 +8632,25 @@ if ($datain == "settimecornremove" && $adminrulecheck['rule'] == "administrator"
     }
     sendmessage($from_id, $textbotlang['Admin']['adminphp']['ok_success_admin'], null, 'HTML');
 }
-// elseif (preg_match('/activeconfig-(\w+)/', $datain, $dataget)) {
-//     $iduser = $dataget[1];
-//     $checkexits = select("user", "*", "id", $iduser, "select");
-//     if (intval($checkexits['checkstatus']) != 0) {
-//         sendmessage($from_id, $textbotlang['Admin']['adminphp']['err_send_account_bot'], null, 'HTML');
-//         return;
-//     }
-//     update("user", "checkstatus", "1", "id", $iduser);
-//     sendmessage($from_id, $textbotlang['Admin']['adminphp']['ok_user_time_hour_enable_1'], null, 'HTML');
-// } elseif (preg_match('/disableconfig-(\w+)/', $datain, $dataget)) {
-//     $iduser = $dataget[1];
-//     $checkexits = select("user", "*", "id", $iduser, "select");
-//     if (intval($checkexits['checkstatus']) != 0) {
-//         sendmessage($from_id, $textbotlang['Admin']['adminphp']['err_send_account_bot'], null, 'HTML');
-//         return;
-//     }
-//     update("user", "checkstatus", "2", "id", $iduser);
-//     sendmessage($from_id, $textbotlang['Admin']['adminphp']['ok_user_time_hour_enable_2'], null, 'HTML');
-// }
+elseif (preg_match('/activeconfig-(\w+)/', $datain, $dataget)) {
+    $iduser = $dataget[1];
+    $checkexits = select("user", "*", "id", $iduser, "select");
+    if (intval($checkexits['checkstatus']) != 0) {
+        sendmessage($from_id, $textbotlang['Admin']['adminphp']['err_send_account_bot'], null, 'HTML');
+        return;
+    }
+    update("user", "checkstatus", "1", "id", $iduser);
+    sendmessage($from_id, $textbotlang['Admin']['adminphp']['ok_user_time_hour_enable_1'], null, 'HTML');
+} elseif (preg_match('/disableconfig-(\w+)/', $datain, $dataget)) {
+    $iduser = $dataget[1];
+    $checkexits = select("user", "*", "id", $iduser, "select");
+    if (intval($checkexits['checkstatus']) != 0) {
+        sendmessage($from_id, $textbotlang['Admin']['adminphp']['err_send_account_bot'], null, 'HTML');
+        return;
+    }
+    update("user", "checkstatus", "2", "id", $iduser);
+    sendmessage($from_id, $textbotlang['Admin']['adminphp']['ok_user_time_hour_enable_2'], null, 'HTML');
+}
 elseif ($text == $textbotlang['keyboard']['hidePanelForUser'] && $adminrulecheck['rule'] == "administrator") {
     sendmessage($from_id, $textbotlang['Admin']['adminphp']['ask_send_panel_user_number'], $backadmin, 'HTML');
     step('getuserhide', $from_id);
@@ -8838,11 +8834,7 @@ elseif ($text == $textbotlang['keyboard']['hidePanelForUser'] && $adminrulecheck
                 unset($DataUserOut['proxies'][$key]['password']);
             } elseif ($key == "trojan") {
                 unset($DataUserOut['proxies'][$key]['password']);
-            } elseif ($key == "wireguard") {
-                    unset($DataUserOut['proxy_settings'][$key]['private_key']);
-                    unset($DataUserOut['proxy_settings'][$key]['public_key']);
-                    unset($DataUserOut['proxy_settings'][$key]['peer_ips']);
-                } else {
+            } else {
                 unset($DataUserOut['proxies'][$key]['id']);
             }
             if (count($DataUserOut['proxies'][$key]) == 0) {

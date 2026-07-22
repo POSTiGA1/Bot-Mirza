@@ -386,6 +386,10 @@ switch ($data['actions'] ?? '') {
                         unset($DataUserOut['proxy_settings'][$key]['password']);
                     } elseif ($key == "trojan") {
                         unset($DataUserOut['proxy_settings'][$key]['password']);
+                    } elseif ($key == "wireguard") {
+                        unset($DataUserOut['proxy_settings'][$key]['private_key']);
+                        unset($DataUserOut['proxy_settings'][$key]['public_key']);
+                        unset($DataUserOut['proxy_settings'][$key]['peer_ips']);
                     } else {
                         unset($DataUserOut['proxy_settings'][$key]['id']);
                     }
@@ -410,11 +414,7 @@ switch ($data['actions'] ?? '') {
                         unset($DataUserOut['proxies'][$key]['password']);
                     } elseif ($key == "trojan") {
                         unset($DataUserOut['proxies'][$key]['password']);
-                    } elseif ($key == "wireguard") {
-                    unset($DataUserOut['proxy_settings'][$key]['private_key']);
-                    unset($DataUserOut['proxy_settings'][$key]['public_key']);
-                    unset($DataUserOut['proxy_settings'][$key]['peer_ips']);
-                }  else {
+                    }else {
                         unset($DataUserOut['proxies'][$key]['id']);
                     }
                     if (count($DataUserOut['proxies'][$key]) == 0) {
