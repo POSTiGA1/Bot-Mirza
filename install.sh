@@ -405,7 +405,6 @@ precheck_fresh_server() {
     _pkg_installed phpmyadmin && found+=("phpMyAdmin")
     # Known VPN panels
     { [ -d /opt/marzban ] || [ -d /var/lib/marzban ]; } && found+=("Marzban panel")
-    { [ -d /etc/x-ui ] || [ -d /usr/local/x-ui ]; } && found+=("x-ui / 3x-ui panel")
     { [ -d /opt/hiddify-manager ] || [ -d /opt/hiddify-config ]; } && found+=("Hiddify panel")
 
     if [ ${#found[@]} -gt 0 ]; then
