@@ -8478,7 +8478,11 @@ if ($datain == "settimecornremove" && $adminrulecheck['rule'] == "administrator"
                     unset($DataUserOut['proxy_settings'][$key]['password']);
                 } elseif ($key == "trojan") {
                     unset($DataUserOut['proxy_settings'][$key]['password']);
-                } else {
+                }elseif ($key == "wireguard") {
+                    unset($DataUserOut['proxy_settings'][$key]['private_key']);
+                    unset($DataUserOut['proxy_settings'][$key]['public_key']);
+                    unset($DataUserOut['proxy_settings'][$key]['peer_ips']);
+                }  else {
                     unset($DataUserOut['proxy_settings'][$key]['id']);
                 }
                 if (count($DataUserOut['proxy_settings'][$key]) == 0) {
@@ -8507,7 +8511,11 @@ if ($datain == "settimecornremove" && $adminrulecheck['rule'] == "administrator"
                     unset($DataUserOut['proxies'][$key]['password']);
                 } elseif ($key == "trojan") {
                     unset($DataUserOut['proxies'][$key]['password']);
-                } else {
+                }elseif ($key == "wireguard") {
+                    unset($DataUserOut['proxy_settings'][$key]['private_key']);
+                    unset($DataUserOut['proxy_settings'][$key]['public_key']);
+                    unset($DataUserOut['proxy_settings'][$key]['peer_ips']);
+                }  else {
                     unset($DataUserOut['proxies'][$key]['id']);
                 }
                 if (count($DataUserOut['proxies'][$key]) == 0) {
@@ -8830,7 +8838,11 @@ elseif ($text == $textbotlang['keyboard']['hidePanelForUser'] && $adminrulecheck
                 unset($DataUserOut['proxies'][$key]['password']);
             } elseif ($key == "trojan") {
                 unset($DataUserOut['proxies'][$key]['password']);
-            } else {
+            } elseif ($key == "wireguard") {
+                    unset($DataUserOut['proxy_settings'][$key]['private_key']);
+                    unset($DataUserOut['proxy_settings'][$key]['public_key']);
+                    unset($DataUserOut['proxy_settings'][$key]['peer_ips']);
+                } else {
                 unset($DataUserOut['proxies'][$key]['id']);
             }
             if (count($DataUserOut['proxies'][$key]) == 0) {
