@@ -364,10 +364,10 @@ OS_ID=""; OS_VERSION_ID=""; OS_CODENAME=""; OS_PRETTY=""
 detect_os() {
     [ -n "$OS_ID" ] && return 0
     [ -f /etc/os-release ] || return 1
-    OS_ID=$(. /etc/os-release 2>/dev/null; echo "${ID:-}")
-    OS_VERSION_ID=$(. /etc/os-release 2>/dev/null; echo "${VERSION_ID:-}")
-    OS_CODENAME=$(. /etc/os-release 2>/dev/null; echo "${UBUNTU_CODENAME:-${VERSION_CODENAME:-}}")
-    OS_PRETTY=$(. /etc/os-release 2>/dev/null; echo "${PRETTY_NAME:-unknown}")
+    local fields
+    fields=$(. /etc/os-release 2>/dev/null; printf '%s\t%s\t%s\t%s' \
+        "${ID:-}" "${VERSION_ID:-}" "${UBUNTU_CODENAME:-${VERSION_CODENAME:-}}" "${PRETTY_NAME:-unknown}")
+    IFS=$'\t' read -r OS_ID OS_VERSION_ID OS_CODENAME OS_PRETTY <<< "$fields"
     return 0
 }
 export -f detect_os
@@ -379,27 +379,27 @@ os_major() {
 }
 export -f os_major
 
-
-PHP_PPA_SERIES="resolute questing noble jammy"
-
 php_ppa_has_series() {
     [ -n "$1" ] || return 1
-    curl -fsSL --max-time 10 -o /dev/null \
-        "https://ppa.launchpadcontent.net/ondrej/php/ubuntu/dists/$1/Release" 2>/dev/null
+    local try
+    for try in 1 2 3; do
+        curl -fsSL --max-time 10 -o /dev/null \
+            "https://ppa.launchpadcontent.net/ondrej/php/ubuntu/dists/$1/Release" 2>/dev/null && return 0
+        sleep 2
+    done
+    return 1
 }
 export -f php_ppa_has_series
 
-php_repo_pin_series() {
-    local series="$1" f found=1
+php_repo_disable() {
+    local f n=0
     for f in /etc/apt/sources.list.d/*ondrej*php*.sources /etc/apt/sources.list.d/*ondrej*php*.list; do
         [ -f "$f" ] || continue
-        found=0
-        sed -i -E "s/^([[:space:]]*Suites:[[:space:]]*).*$/\1${series}/" "$f"
-        sed -i -E "s#^(deb(-src)?([[:space:]]+\[[^]]*\])?[[:space:]]+[^[:space:]]+[[:space:]]+)[a-z]+([[:space:]]+main)#\1${series}\4#" "$f"
+        mv -f "$f" "$f.disabled-by-mirza" && n=$((n + 1))
     done
-    return $found
+    [ "$n" -gt 0 ]
 }
-export -f php_repo_pin_series
+export -f php_repo_disable
 
 setup_php_repo() {
     detect_os
@@ -414,22 +414,36 @@ setup_php_repo() {
     add-apt-repository -y ppa:ondrej/php || \
         LC_ALL=C.UTF-8 add-apt-repository -y ppa:ondrej/php || return 1
 
-    # Does the PPA actually build for this release?
+    # Does the PPA actually build for this release? Pinning to an older series
     if [ -n "$OS_CODENAME" ] && ! php_ppa_has_series "$OS_CODENAME"; then
-        local c series=""
-        for c in $PHP_PPA_SERIES; do
-            if php_ppa_has_series "$c"; then series="$c"; break; fi
-        done
-        if [ -n "$series" ]; then
-            echo "ondrej/php has no build for '$OS_CODENAME' yet - pinning the repo to '$series'."
-            php_repo_pin_series "$series" || echo "Warning: could not find the ondrej/php source file to pin."
-        else
-            echo "Warning: could not reach the ondrej/php PPA; continuing with the distro PHP packages."
-        fi
+        echo "ondrej/php publishes no packages for '$OS_CODENAME' - disabling the PPA and using the PHP shipped with $OS_PRETTY."
+        php_repo_disable || echo "Warning: no ondrej/php source file found to disable."
     fi
     return 0
 }
 export -f setup_php_repo
+
+export PHP_VER_CANDIDATES="8.2 8.3 8.4 8.5"
+
+# 0 when apt has an installable candidate for this package.
+_apt_has_candidate() {
+    local cand
+    cand=$(apt-cache policy "$1" 2>/dev/null | awk '/Candidate:/{print $2; exit}')
+    [ -n "$cand" ] && [ "$cand" != "(none)" ]
+}
+export -f _apt_has_candidate
+
+resolve_php_ver() {
+    local v
+    for v in $PHP_VER_CANDIDATES; do
+        if _apt_has_candidate "php$v" && _apt_has_candidate "libapache2-mod-php$v"; then
+            echo "$v"; return 0
+        fi
+    done
+    echo "8.2"
+    return 1
+}
+export -f resolve_php_ver
 
 # Configure MySQL root login (all output captured by run_step's log).
 setup_mysql_root() {
@@ -445,35 +459,40 @@ setup_mysql_root() {
     passs=$(grep '$pass' /root/confmirza/dbrootmirza.txt | cut -d"'" -f2)
     userrr=$(grep '$user' /root/confmirza/dbrootmirza.txt | cut -d"'" -f2)
     local alter_ok=0
-    if sudo mysql -u "$userrr" -p"$passs" -e "alter user '$userrr'@'localhost' identified with mysql_native_password by '$passs';FLUSH PRIVILEGES;" 2>/dev/null; then
+    if sudo mysql -u "$userrr" -p"$passs" -e "alter user '$userrr'@'localhost' identified with mysql_native_password by '$passs';FLUSH PRIVILEGES;"; then
         alter_ok=1
-    elif sudo mysql -e "alter user '$userrr'@'localhost' identified with mysql_native_password by '$passs';FLUSH PRIVILEGES;" 2>/dev/null; then
+    elif sudo mysql -e "alter user '$userrr'@'localhost' identified with mysql_native_password by '$passs';FLUSH PRIVILEGES;"; then
         alter_ok=1
-    elif sudo mysql -e "alter user '$userrr'@'localhost' identified with caching_sha2_password by '$passs';FLUSH PRIVILEGES;" 2>/dev/null; then
+    elif sudo mysql -e "alter user '$userrr'@'localhost' identified with caching_sha2_password by '$passs';FLUSH PRIVILEGES;"; then
         alter_ok=1
-    elif sudo mysql -e "alter user '$userrr'@'localhost' identified by '$passs';FLUSH PRIVILEGES;" 2>/dev/null; then
+    elif sudo mysql -e "alter user '$userrr'@'localhost' identified by '$passs';FLUSH PRIVILEGES;"; then
         alter_ok=1
     fi
     if [ "$alter_ok" -eq 1 ]; then
         echo "SELECT 1" | mysql -u"$userrr" -p"$passs" >/dev/null 2>&1 && return 0
     fi
-    if true; then
-        local mycnf=/etc/mysql/mysql.conf.d/mysqld.cnf
-        [ -f "$mycnf" ] || mycnf=$(ls /etc/mysql/mysql.conf.d/*.cnf 2>/dev/null | head -1)
-        [ -n "$mycnf" ] && [ -f "$mycnf" ] || return 1
-        sudo sed -i '$ a skip-grant-tables' "$mycnf"
-        sudo systemctl restart mysql
-        sudo mysql <<EOF
+
+    local dropin_dir=""
+    local d
+    for d in /etc/mysql/mysql.conf.d /etc/mysql/mariadb.conf.d /etc/mysql/conf.d; do
+        [ -d "$d" ] && { dropin_dir="$d"; break; }
+    done
+    [ -n "$dropin_dir" ] || return 1
+    local dropin="$dropin_dir/zz-mirza-recovery.cnf"
+    printf '[mysqld]\nskip-grant-tables\n' | sudo tee "$dropin" >/dev/null || return 1
+    sudo systemctl restart mysql
+    sudo mysql <<EOF
 FLUSH PRIVILEGES;
 DROP USER IF EXISTS 'root'@'localhost';
 CREATE USER 'root'@'localhost' IDENTIFIED BY '${passs}';
 GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost' WITH GRANT OPTION;
 FLUSH PRIVILEGES;
 EOF
-        sudo sed -i '/skip-grant-tables/d' "$mycnf"
-        sudo systemctl restart mysql
-        echo "SELECT 1" | mysql -u"$userrr" -p"$passs" 2>/dev/null || return 1
-    fi
+    sudo rm -f "$dropin"
+    # Older installer versions appended the option to mysqld.cnf directly.
+    sudo sed -i '/^skip-grant-tables/d' /etc/mysql/mysql.conf.d/mysqld.cnf 2>/dev/null
+    sudo systemctl restart mysql
+    echo "SELECT 1" | mysql -u"$userrr" -p"$passs" >/dev/null 2>&1 || return 1
     return 0
 }
 export -f setup_mysql_root
@@ -1223,6 +1242,11 @@ function fix_update_issues() {
     else target="$LEGACY"; fmt="legacy"; fi
     [ -f "$target" ] && cp "$target" "$target.mirzabackup"
 
+    local parked=""
+    if [ "$fmt" = "deb822" ] && [ -s "$LEGACY" ]; then
+        cp "$LEGACY" "$LEGACY.mirzabackup" && : > "$LEGACY" && parked="$LEGACY"
+    fi
+
     # arm64/armhf live on ports.ubuntu.com, not the archive mirrors.
     local arch path MIRRORS
     arch=$(dpkg --print-architecture 2>/dev/null || uname -m)
@@ -1264,6 +1288,8 @@ EOF
         fi
         if apt-get update --allow-releaseinfo-change 2>/dev/null; then
             echo -e "\e[32mSuccessfully updated using mirror: $mirror\033[0m"
+            rm -f "$target.mirzabackup"
+            [ -n "$parked" ] && rm -f "$parked.mirzabackup"
             return 0
         fi
     done
@@ -1272,6 +1298,7 @@ EOF
     else
         rm -f "$target"
     fi
+    [ -n "$parked" ] && [ -f "$parked.mirzabackup" ] && mv "$parked.mirzabackup" "$parked"
     echo -e "\e[91mAll mirrors failed. Restored original apt sources\033[0m"
     return 1
 }
@@ -1346,6 +1373,9 @@ preflight() {
                     _kv "OS" "$(_dot ok) ${C_OK}${OS_PRETTY}${CR} ${C_DIM}(newer than tested)${CR}"
                 elif [ "$maj" -ge 20 ]; then
                     _kv "OS" "$(_dot warn) ${C_WARN}${OS_PRETTY} (untested; 22.04/24.04/26.04 recommended)${CR}"
+                elif [ "$maj" -eq 0 ]; then
+                    # No usable VERSION_ID (dev snapshot, trimmed image): warn, don't block.
+                    _kv "OS" "$(_dot warn) ${C_WARN}${OS_PRETTY} (version unknown; 22.04/24.04/26.04 recommended)${CR}"
                 else
                     _kv "OS" "$(_dot bad) ${C_BAD}${OS_PRETTY} (too old; use 22.04, 24.04 or 26.04)${CR}"; ok=0
                 fi
@@ -1402,9 +1432,6 @@ preflight() {
 
 function install_bot() {
     BOT_DIR="/var/www/html/mirzaprobotconfig"
-    # PHP version used by this install (8.2 unless the release only has newer).
-    PHP_VER="$(state_get PHP_VER)"
-    [ -z "$PHP_VER" ] && PHP_VER="8.2"
 
     # ── Guard: only block when a PREVIOUS install fully COMPLETED ──
     if [ -f "$CONFIG_FILE_DEFAULT" ] && ! has_resumable_state; then
@@ -2171,10 +2198,10 @@ function remove_bot() {
     sudo rm -rf /etc/mysql /var/lib/mysql /var/log/mysql /var/log/mysql.* /usr/lib/mysql /usr/include/mysql /usr/share/mysql
     sudo rm /lib/systemd/system/mysql.service
     sudo rm /etc/init.d/mysql
-    sudo dpkg --remove --force-remove-reinstreq mysql-server mysql-server-8.0
+    sudo dpkg --remove --force-remove-reinstreq mysql-server mysql-server-8.0 mysql-server-8.4
     sudo find /etc/systemd /lib/systemd /usr/lib/systemd -name "*mysql*" -exec rm -f {} \;
-    sudo apt-get purge -y mysql-server mysql-server-8.0 mysql-client mysql-client-8.0
-    sudo apt-get purge -y mysql-client-core-8.0 mysql-server-core-8.0 mysql-common php-mysql php8.2-mysql php8.3-mysql php-mariadb-mysql-kbs
+    sudo apt-get purge -y 'mysql-server*' 'mysql-client*'
+    sudo apt-get purge -y mysql-common php-mysql php8.2-mysql php8.3-mysql php8.4-mysql php-mariadb-mysql-kbs
     sudo apt-get autoremove --purge -y
     sudo apt-get clean
     sudo apt-get update --allow-releaseinfo-change
