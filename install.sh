@@ -360,6 +360,77 @@ apt_recover() {
 }
 export -f apt_recover
 
+OS_ID=""; OS_VERSION_ID=""; OS_CODENAME=""; OS_PRETTY=""
+detect_os() {
+    [ -n "$OS_ID" ] && return 0
+    [ -f /etc/os-release ] || return 1
+    OS_ID=$(. /etc/os-release 2>/dev/null; echo "${ID:-}")
+    OS_VERSION_ID=$(. /etc/os-release 2>/dev/null; echo "${VERSION_ID:-}")
+    OS_CODENAME=$(. /etc/os-release 2>/dev/null; echo "${UBUNTU_CODENAME:-${VERSION_CODENAME:-}}")
+    OS_PRETTY=$(. /etc/os-release 2>/dev/null; echo "${PRETTY_NAME:-unknown}")
+    return 0
+}
+export -f detect_os
+
+os_major() {
+    detect_os
+    local m="${OS_VERSION_ID%%.*}"
+    case "$m" in ''|*[!0-9]*) echo 0 ;; *) echo "$m" ;; esac
+}
+export -f os_major
+
+
+PHP_PPA_SERIES="resolute questing noble jammy"
+
+php_ppa_has_series() {
+    [ -n "$1" ] || return 1
+    curl -fsSL --max-time 10 -o /dev/null \
+        "https://ppa.launchpadcontent.net/ondrej/php/ubuntu/dists/$1/Release" 2>/dev/null
+}
+export -f php_ppa_has_series
+
+php_repo_pin_series() {
+    local series="$1" f found=1
+    for f in /etc/apt/sources.list.d/*ondrej*php*.sources /etc/apt/sources.list.d/*ondrej*php*.list; do
+        [ -f "$f" ] || continue
+        found=0
+        sed -i -E "s/^([[:space:]]*Suites:[[:space:]]*).*$/\1${series}/" "$f"
+        sed -i -E "s#^(deb(-src)?([[:space:]]+\[[^]]*\])?[[:space:]]+[^[:space:]]+[[:space:]]+)[a-z]+([[:space:]]+main)#\1${series}\4#" "$f"
+    done
+    return $found
+}
+export -f php_repo_pin_series
+
+setup_php_repo() {
+    detect_os
+    export DEBIAN_FRONTEND=noninteractive
+    # add-apt-repository lives in software-properties-common - minimal cloud
+    # images (and the 26.04 minimal image in particular) do not ship it.
+    if ! command -v add-apt-repository >/dev/null 2>&1; then
+        apt-get update -o DPkg::Lock::Timeout=180 >/dev/null 2>&1
+        apt-get install -y software-properties-common ca-certificates curl gnupg \
+            -o DPkg::Lock::Timeout=180 || return 1
+    fi
+    add-apt-repository -y ppa:ondrej/php || \
+        LC_ALL=C.UTF-8 add-apt-repository -y ppa:ondrej/php || return 1
+
+    # Does the PPA actually build for this release?
+    if [ -n "$OS_CODENAME" ] && ! php_ppa_has_series "$OS_CODENAME"; then
+        local c series=""
+        for c in $PHP_PPA_SERIES; do
+            if php_ppa_has_series "$c"; then series="$c"; break; fi
+        done
+        if [ -n "$series" ]; then
+            echo "ondrej/php has no build for '$OS_CODENAME' yet - pinning the repo to '$series'."
+            php_repo_pin_series "$series" || echo "Warning: could not find the ondrej/php source file to pin."
+        else
+            echo "Warning: could not reach the ondrej/php PPA; continuing with the distro PHP packages."
+        fi
+    fi
+    return 0
+}
+export -f setup_php_repo
+
 # Configure MySQL root login (all output captured by run_step's log).
 setup_mysql_root() {
     sudo mkdir -p /root/confmirza || return 1
@@ -373,17 +444,33 @@ setup_mysql_root() {
     echo "\$path = '${RANDOM_NUMBER}';"   >> /root/confmirza/dbrootmirza.txt
     passs=$(grep '$pass' /root/confmirza/dbrootmirza.txt | cut -d"'" -f2)
     userrr=$(grep '$user' /root/confmirza/dbrootmirza.txt | cut -d"'" -f2)
-    if ! sudo mysql -u "$userrr" -p"$passs" -e "alter user '$userrr'@'localhost' identified with mysql_native_password by '$passs';FLUSH PRIVILEGES;"; then
-        # Recovery via skip-grant-tables
-        sudo sed -i '$ a skip-grant-tables' /etc/mysql/mysql.conf.d/mysqld.cnf
+    local alter_ok=0
+    if sudo mysql -u "$userrr" -p"$passs" -e "alter user '$userrr'@'localhost' identified with mysql_native_password by '$passs';FLUSH PRIVILEGES;" 2>/dev/null; then
+        alter_ok=1
+    elif sudo mysql -e "alter user '$userrr'@'localhost' identified with mysql_native_password by '$passs';FLUSH PRIVILEGES;" 2>/dev/null; then
+        alter_ok=1
+    elif sudo mysql -e "alter user '$userrr'@'localhost' identified with caching_sha2_password by '$passs';FLUSH PRIVILEGES;" 2>/dev/null; then
+        alter_ok=1
+    elif sudo mysql -e "alter user '$userrr'@'localhost' identified by '$passs';FLUSH PRIVILEGES;" 2>/dev/null; then
+        alter_ok=1
+    fi
+    if [ "$alter_ok" -eq 1 ]; then
+        echo "SELECT 1" | mysql -u"$userrr" -p"$passs" >/dev/null 2>&1 && return 0
+    fi
+    if true; then
+        local mycnf=/etc/mysql/mysql.conf.d/mysqld.cnf
+        [ -f "$mycnf" ] || mycnf=$(ls /etc/mysql/mysql.conf.d/*.cnf 2>/dev/null | head -1)
+        [ -n "$mycnf" ] && [ -f "$mycnf" ] || return 1
+        sudo sed -i '$ a skip-grant-tables' "$mycnf"
         sudo systemctl restart mysql
         sudo mysql <<EOF
+FLUSH PRIVILEGES;
 DROP USER IF EXISTS 'root'@'localhost';
 CREATE USER 'root'@'localhost' IDENTIFIED BY '${passs}';
 GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost' WITH GRANT OPTION;
 FLUSH PRIVILEGES;
 EOF
-        sudo sed -i '/skip-grant-tables/d' /etc/mysql/mysql.conf.d/mysqld.cnf
+        sudo sed -i '/skip-grant-tables/d' "$mycnf"
         sudo systemctl restart mysql
         echo "SELECT 1" | mysql -u"$userrr" -p"$passs" 2>/dev/null || return 1
     fi
@@ -394,14 +481,18 @@ export -f setup_mysql_root
 # True if a package is installed and configured.
 _pkg_installed() { dpkg-query -W -f='${Status}' "$1" 2>/dev/null | grep -q 'install ok installed'; }
 
+_pkg_installed_glob() {
+    dpkg-query -W -f='${Package} ${Status}\n' "$1" 2>/dev/null | grep -q 'install ok installed'
+}
+
 # Refuse to install on a server that already has conflicting software.
 # Only runs on a brand-new install (never on resume / Mirza's own partial state).
 precheck_fresh_server() {
     local found=()
     _pkg_installed apache2 && found+=("apache2 (web server)")
     { _pkg_installed nginx || _pkg_installed nginx-core || _pkg_installed nginx-full; } && found+=("nginx (web server)")
-    { _pkg_installed mysql-server || _pkg_installed mysql-server-8.0; } && found+=("mysql-server")
-    { _pkg_installed mariadb-server || _pkg_installed mariadb-server-10.6; } && found+=("mariadb-server")
+    { _pkg_installed mysql-server || _pkg_installed_glob 'mysql-server-[0-9]*'; } && found+=("mysql-server")
+    { _pkg_installed mariadb-server || _pkg_installed_glob 'mariadb-server-[0-9]*'; } && found+=("mariadb-server")
     _pkg_installed phpmyadmin && found+=("phpMyAdmin")
     # Known VPN panels
     { [ -d /opt/marzban ] || [ -d /var/lib/marzban ]; } && found+=("Marzban panel")
@@ -416,23 +507,21 @@ precheck_fresh_server() {
         local f
         for f in "${found[@]}"; do printf "      ${C_WARN}-${CR} ${C_TXT}%s${CR}\n" "$f"; done
         echo ""
-        printf "    ${C_TXT}Use a clean Ubuntu 22.04/24.04 server (no web server, database, or panel)${CR}\n"
+        printf "    ${C_TXT}Use a clean Ubuntu 22.04/24.04/26.04 server (no web server, database, or panel)${CR}\n"
         printf "    ${C_TXT}or reinstall the OS, then run the installer again.${CR}\n"
         return 1
     fi
     return 0
 }
 
-# Repair a broken / half-configured MySQL left by an interrupted apt run.
-# Safe to wipe data here: this only runs during a fresh install, before any
-# Mirza database is created (the fresh-server precheck guarantees no real DB).
+
 repair_mysql() {
     export DEBIAN_FRONTEND=noninteractive
     systemctl stop mysql 2>/dev/null
     # 1) Gentle fix first
     dpkg --configure -a >/dev/null 2>&1
     apt-get install -f -y >/dev/null 2>&1
-    if dpkg-query -W -f='${Status}' mysql-server-8.0 2>/dev/null | grep -q 'install ok installed'; then
+    if dpkg-query -W -f='${Package} ${Status}\n' 'mysql-server-[0-9]*' 2>/dev/null | grep -q 'install ok installed'; then
         return 0
     fi
     # 2) Hard reset: purge MySQL and wipe its (empty) data dir, then reinstall fresh
@@ -445,8 +534,7 @@ repair_mysql() {
 }
 export -f repair_mysql
 
-# install_pause "<where>" -> save progress and exit WITHOUT rolling back.
-# Re-running `mirza install` will pick up from the last completed phase.
+
 install_pause() {
     local where="$1"
     echo ""
@@ -1121,37 +1209,70 @@ function fix_update_issues() {
     echo -e "\e[33mTrying to fix update issues by changing mirrors...\033[0m"
     # Broken apt mirrors are often a DNS problem - fix DNS first
     ensure_dns
-    cp /etc/apt/sources.list /etc/apt/sources.list.backup
-    if [ -f /etc/os-release ]; then
-        . /etc/apt/sources.list
-        VERSION_ID=$(cat /etc/os-release | grep VERSION_ID | cut -d '"' -f2)
-        UBUNTU_CODENAME=$(cat /etc/os-release | grep UBUNTU_CODENAME | cut -d '=' -f2)
-    else
+    if ! detect_os || [ -z "$OS_CODENAME" ]; then
         echo -e "\e[91mCould not detect Ubuntu version.\033[0m"
         return 1
     fi
-    MIRRORS=(
-        "archive.ubuntu.com"
-        "us.archive.ubuntu.com"
-        "fr.archive.ubuntu.com"
-        "de.archive.ubuntu.com"
-        "mirrors.digitalocean.com"
-        "mirrors.linode.com"
-    )
+
+    # Ubuntu 24.04+ (and 26.04) ship the deb822 file and often have no
+    # /etc/apt/sources.list at all - rewrite whichever one this release uses.
+    local DEB822=/etc/apt/sources.list.d/ubuntu.sources
+    local LEGACY=/etc/apt/sources.list
+    local target="" fmt=""
+    if [ -f "$DEB822" ]; then target="$DEB822"; fmt="deb822"
+    else target="$LEGACY"; fmt="legacy"; fi
+    [ -f "$target" ] && cp "$target" "$target.mirzabackup"
+
+    # arm64/armhf live on ports.ubuntu.com, not the archive mirrors.
+    local arch path MIRRORS
+    arch=$(dpkg --print-architecture 2>/dev/null || uname -m)
+    case "$arch" in
+        arm64|armhf|ppc64el|s390x|riscv64)
+            MIRRORS=("ports.ubuntu.com")
+            path="ubuntu-ports"
+            ;;
+        *)
+            MIRRORS=(
+                "archive.ubuntu.com"
+                "us.archive.ubuntu.com"
+                "fr.archive.ubuntu.com"
+                "de.archive.ubuntu.com"
+                "mirrors.digitalocean.com"
+                "mirrors.linode.com"
+            )
+            path="ubuntu"
+            ;;
+    esac
+
+    local mirror
     for mirror in "${MIRRORS[@]}"; do
         echo -e "\e[33mTrying mirror: $mirror\033[0m"
-        cat > /etc/apt/sources.list << EOF
-deb http://$mirror/ubuntu/ $UBUNTU_CODENAME main restricted universe multiverse
-deb http://$mirror/ubuntu/ $UBUNTU_CODENAME-updates main restricted universe multiverse
-deb http://$mirror/ubuntu/ $UBUNTU_CODENAME-security main restricted universe multiverse
+        if [ "$fmt" = "deb822" ]; then
+            cat > "$target" << EOF
+Types: deb
+URIs: http://$mirror/$path/
+Suites: $OS_CODENAME $OS_CODENAME-updates $OS_CODENAME-backports $OS_CODENAME-security
+Components: main restricted universe multiverse
+Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
 EOF
+        else
+            cat > "$target" << EOF
+deb http://$mirror/$path/ $OS_CODENAME main restricted universe multiverse
+deb http://$mirror/$path/ $OS_CODENAME-updates main restricted universe multiverse
+deb http://$mirror/$path/ $OS_CODENAME-security main restricted universe multiverse
+EOF
+        fi
         if apt-get update --allow-releaseinfo-change 2>/dev/null; then
             echo -e "\e[32mSuccessfully updated using mirror: $mirror\033[0m"
             return 0
         fi
     done
-    mv /etc/apt/sources.list.backup /etc/apt/sources.list
-    echo -e "\e[91mAll mirrors failed. Restored original sources.list\033[0m"
+    if [ -f "$target.mirzabackup" ]; then
+        mv "$target.mirzabackup" "$target"
+    else
+        rm -f "$target"
+    fi
+    echo -e "\e[91mAll mirrors failed. Restored original apt sources\033[0m"
     return 1
 }
 
@@ -1214,6 +1335,28 @@ preflight() {
         _kv "Package mgr" "$(_dot bad) ${C_BAD}apt not found (Ubuntu/Debian required)${CR}"; ok=0
     fi
 
+    # Supported: Ubuntu 22.04 / 24.04 / 26.04 (newer releases pass with a note).
+    detect_os
+    local maj; maj=$(os_major)
+    if [ "$OS_ID" = "ubuntu" ]; then
+        case "$OS_VERSION_ID" in
+            22.04|24.04|26.04) _kv "OS" "$(_dot ok) ${C_OK}${OS_PRETTY}${CR}" ;;
+            *)
+                if [ "$maj" -ge 26 ]; then
+                    _kv "OS" "$(_dot ok) ${C_OK}${OS_PRETTY}${CR} ${C_DIM}(newer than tested)${CR}"
+                elif [ "$maj" -ge 20 ]; then
+                    _kv "OS" "$(_dot warn) ${C_WARN}${OS_PRETTY} (untested; 22.04/24.04/26.04 recommended)${CR}"
+                else
+                    _kv "OS" "$(_dot bad) ${C_BAD}${OS_PRETTY} (too old; use 22.04, 24.04 or 26.04)${CR}"; ok=0
+                fi
+                ;;
+        esac
+    elif [ "$OS_ID" = "debian" ]; then
+        _kv "OS" "$(_dot warn) ${C_WARN}${OS_PRETTY} (untested; Ubuntu 22.04/24.04/26.04 recommended)${CR}"
+    else
+        _kv "OS" "$(_dot warn) ${C_WARN}${OS_PRETTY:-unknown} (untested)${CR}"
+    fi
+
     local arch; arch=$(uname -m)
     case "$arch" in
         x86_64|amd64|aarch64|arm64) _kv "Arch" "$(_dot ok) ${C_OK}${arch}${CR}" ;;
@@ -1259,6 +1402,9 @@ preflight() {
 
 function install_bot() {
     BOT_DIR="/var/www/html/mirzaprobotconfig"
+    # PHP version used by this install (8.2 unless the release only has newer).
+    PHP_VER="$(state_get PHP_VER)"
+    [ -z "$PHP_VER" ] && PHP_VER="8.2"
 
     # ── Guard: only block when a PREVIOUS install fully COMPLETED ──
     if [ -f "$CONFIG_FILE_DEFAULT" ] && ! has_resumable_state; then
@@ -1347,8 +1493,8 @@ function install_bot() {
         run_step "Preparing package manager (clearing stale apt locks)" "apt_recover" \
             || { show_step_error; install_pause "Preparing package manager"; }
 
-        if ! run_step "Adding PHP repository (ondrej/php)" "add-apt-repository -y ppa:ondrej/php"; then
-            if ! run_step "Retrying PHP repository with locale override" "LC_ALL=C.UTF-8 add-apt-repository -y ppa:ondrej/php"; then
+        if ! run_step "Adding PHP repository (ondrej/php)" "setup_php_repo"; then
+            if ! run_step "Retrying PHP repository with locale override" "LC_ALL=C.UTF-8 setup_php_repo"; then
                 show_step_error
                 install_pause "Adding PHP repository"
             fi
