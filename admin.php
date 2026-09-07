@@ -8615,13 +8615,13 @@ if ($datain == "settimecornremove" && $adminrulecheck['rule'] == "administrator"
             return;
         }
         if (!empty($data['status']) && $data['status'] != 200) {
-            sendmessage($from_id, sprintf($textbotlang['Admin']['managepanel']['eylanErrorCode'], $data['status']), null, 'HTML');
+            sendmessage($from_id, sprintf($textbotlang['Admin']['managepanel']['ErrorCode'], $data['status']), null, 'HTML');
             return;
         }
         $data = json_decode($data['body'], true);
         if (!$data['success']) {
-            sendmessage($from_id, $textbotlang['Admin']['managepanel']['eylanUserNotExist'], $optionX_ui_single, 'HTML');
-            sendmessage($from_id, $textbotlang['Admin']['managepanel']['eylanPanelOutput'] . json_encode($data), null, 'HTML');
+            sendmessage($from_id, $textbotlang['Admin']['managepanel']['UserNotExist'], $optionX_ui_single, 'HTML');
+            sendmessage($from_id, $textbotlang['Admin']['managepanel']['PanelOutput'] . json_encode($data), null, 'HTML');
             return;
         }
         sendmessage($from_id, $textbotlang['Admin']['managepanel']['protocolSaved'], $optionX_ui_single, 'HTML');
@@ -8924,9 +8924,24 @@ elseif ($text == $textbotlang['keyboard']['hidePanelForUser'] && $adminrulecheck
             return;
         }
         $datainbound = json_encode($userdata['service_ids'], true);
-    } elseif ($marzban_list_get['type'] == "x-ui_single" || $marzban_list_get['type'] == "alireza_single") {
-        $datainbound = $text;
-    } elseif ($marzban_list_get['type'] == "s_ui") {
+    }elseif ($panel['type'] == "x-ui_single") {
+        $data = get_clinets($text, $panel);
+        if (!empty($data['error'])) {
+            sendmessage($from_id, panelErrorText($data['error']), null, 'HTML');
+            return;
+        }
+        if (!empty($data['status']) && $data['status'] != 200) {
+            sendmessage($from_id, sprintf($textbotlang['Admin']['managepanel']['ErrorCode'], $data['status']), null, 'HTML');
+            return;
+        }
+        $data = json_decode($data['body'], true);
+        if (!$data['success']) {
+            sendmessage($from_id, $textbotlang['Admin']['managepanel']['UserNotExist'], $optionX_ui_single, 'HTML');
+            sendmessage($from_id, $textbotlang['Admin']['managepanel']['PanelOutput'] . json_encode($data), null, 'HTML');
+            return;
+        }
+        $datainbound = json_encode($data['obj']['inboundIds']);
+    }  elseif ($marzban_list_get['type'] == "s_ui") {
         $data = GetClientsS_UI($text, $marzban_list_get['name_panel']);
         if (count($data) == 0) {
             sendmessage($from_id, $textbotlang['Admin']['managepanel']['userNotInPanel2'], $options_ui, 'HTML');

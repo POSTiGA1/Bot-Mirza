@@ -2147,9 +2147,9 @@ support 权限级别可访问用户服务和客服消息回复部分',
                         'notFound' => '❌ 未找到所需的面板。',
                         'errorCode' => '❌ 发生错误，错误代码：%s',
                         'xuiErrorCode' => '❌ 发生错误。错误代码：  ',
-                        'eylanErrorCode' => '❌  发生错误。错误代码：  %s',
-                        'eylanUserNotExist' => '❌ 用户在面板中不存在。',
-                        'eylanPanelOutput' => '面板输出：',
+                        'ErrorCode' => '❌  发生错误。错误代码：  %s',
+                        'UserNotExist' => '❌ 用户在面板中不存在。',
+                        'PanelOutput' => '面板输出：',
                 ],
                 'messageBulk' => [
                         'userMessage' => '📥 收到来自用户的消息回复。如需回复，请点击下方按钮并发送您的消息。

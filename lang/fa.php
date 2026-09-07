@@ -2146,9 +2146,9 @@ nowpayments.io
                         'notFound' => '❌ پنل مورد نظر یافت نشد.',
                         'errorCode' => '❌  خطایی رخ داده است کد خطا :  %s',
                         'xuiErrorCode' => '❌ خطایی رخ داده است کد خطا :  ',
-                        'eylanErrorCode' => '❌  خطایی رخ داده است کد خطا :  %s',
-                        'eylanUserNotExist' => '❌ یوزر در پنل وجود ندارد.',
-                        'eylanPanelOutput' => 'خروجی پنل :',
+                        'ErrorCode' => '❌  خطایی رخ داده است کد خطا :  %s',
+                        'UserNotExist' => '❌ یوزر در پنل وجود ندارد.',
+                        'PanelOutput' => 'خروجی پنل :',
                 ],
                 'messageBulk' => [
                         'userMessage' => '📥 یک پاسخ به پیام از کاربر دریافت شد برای پاسخ روی دکمه زیر کلیک کنید و پیام خود را ارسال کنید.

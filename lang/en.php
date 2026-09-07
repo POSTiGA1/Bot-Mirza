@@ -2147,9 +2147,9 @@ To hide a panel, select your panels from the list below, then send the /end_hide
                         'notFound' => '❌ The requested panel was not found.',
                         'errorCode' => '❌ An error occurred. Error code: %s',
                         'xuiErrorCode' => '❌ An error occurred. Error code:  ',
-                        'eylanErrorCode' => '❌  An error occurred. Error code:  %s',
-                        'eylanUserNotExist' => '❌ User does not exist in the panel.',
-                        'eylanPanelOutput' => 'Panel output: ',
+                        'ErrorCode' => '❌  An error occurred. Error code:  %s',
+                        'UserNotExist' => '❌ User does not exist in the panel.',
+                        'PanelOutput' => 'Panel output: ',
                 ],
                 'messageBulk' => [
                         'userMessage' => '📥 A reply to a message was received from the user. To reply, click the button below and send your message.
