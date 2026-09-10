@@ -5163,15 +5163,6 @@ if ($user['step'] == "createusertest" || preg_match('/locationtest_(.*)/', $data
             return;
         }
 
-        // The daily spend throttle, off unless an admin sets a number.
-        //
-        // Two things were wrong with the first version of this. It counted
-        // every row rather than the paid ones, and the row is written before
-        // the link is even requested — so a buyer who opened the gateway and
-        // walked away still spent the shop's daily allowance, and four taps on
-        // a 272,000 plan closed the door for the rest of the day. And the
-        // ceiling was hardcoded at 1,000,000, which for a rial gateway is a few
-        // orders, with no way for the admin to see it or change it.
         $dailylimit = intval(getPaySettingValue('dailylimitiranpay4', '0'));
         if ($dailylimit > 0) {
             $dateacc = date('Y/m/d');
