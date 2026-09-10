@@ -64,7 +64,7 @@ $backmenu_register(["apinowpayment", "getcashplisio", "gethelpplisio", "getmainp
 $backmenu_register(["marchent_tronseller", "getcashnowpayment", "gethelpnowpayment", "getmainaqnowpayment", "maxbalancenowpayment"], $nowpayment_setting_keyboard);
 $backmenu_register(["marchent_floypay", "getcashiranpay1", "gethelpiranpay1", "getmaaxiranpay1", "getmainiranpay1"], $Swapinokey);
 $backmenu_register(["apiiranpay", "helpiranpay3", "maxbalanceiranpay", "minbalanceiranpay"], $iranpaykeyboard);
-$backmenu_register(["apiiranpay4", "endpointiranpay4", "getcashiranpay4", "getmaaxiranpay4", "getmainiranpay4", "helpiranpay4"], $abangatewaykeyboard);
+$backmenu_register(["apiiranpay4", "endpointiranpay4", "getcashiranpay4", "getdailyiranpay4", "getmaaxiranpay4", "getmainiranpay4", "helpiranpay4"], $abangatewaykeyboard);
 $backmenu_register(["getmaindigitaltron", "getmaxdigitaltron", "helpofflinearze"], $tronnowpayments);
 $backmenu_register(["chashbackstar", "gethelpstar", "getmainaqstar", "maxbalancestar"], $Startelegram);
 $backmenu_register([
@@ -6346,6 +6346,17 @@ if ($datain == "settimecornremove" && $adminrulecheck['rule'] == "administrator"
     step("getmaaxiranpay4", $from_id);
 } elseif ($user['step'] == "getmaaxiranpay4") {
     update("PaySetting", "ValuePay", intval($text), "NamePay", "maxbalanceiranpay4");
+    sendmessage($from_id, $textbotlang['Admin']['SettingnowPayment']['saveApi'], $abangatewaykeyboard, 'HTML');
+    step('home', $from_id);
+} elseif ($text == $textbotlang['keyboard']['dailyLimitIranPay4'] && $adminrulecheck['rule'] == "administrator") {
+    sendmessage($from_id, $textbotlang['Admin']['gateway']['askDailyLimit'] ?? $textbotlang['users']['selectoption'], $backadmin, 'HTML');
+    step("getdailyiranpay4", $from_id);
+} elseif ($user['step'] == "getdailyiranpay4") {
+    if (!ctype_digit($text)) {
+        sendmessage($from_id, $textbotlang['common']['invalidInput'], $backadmin, 'HTML');
+        return;
+    }
+    update("PaySetting", "ValuePay", intval($text), "NamePay", "dailylimitiranpay4");
     sendmessage($from_id, $textbotlang['Admin']['SettingnowPayment']['saveApi'], $abangatewaykeyboard, 'HTML');
     step('home', $from_id);
 } elseif ($text == $textbotlang['keyboard']['cashbackIranPay4'] && $adminrulecheck['rule'] == "administrator") {
