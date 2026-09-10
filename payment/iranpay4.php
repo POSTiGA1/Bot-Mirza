@@ -140,18 +140,45 @@ try {
     iranpay4_finish(false, $failedTitle, 'پرداخت تایید شد ولی تحویل سرویس خطا داد. با پشتیبانی تماس بگیرید.');
 }
 
+$statement = $pdo->prepare(
+    "UPDATE Payment_report SET dec_not_confirmed = :answer WHERE id_order = :id_order"
+);
+$statement->bindValue(':answer', json_encode($response, JSON_UNESCAPED_UNICODE));
+$statement->bindValue(':id_order', $order_id);
+$statement->execute();
+
+$buyer = select("user", "*", "id", $payment['id_user'], "select");
+
 // Cashback, on the same terms as every other gateway here. Left out of the
 // first version of this file, which quietly made this the one gateway where a
 // shop's cashback setting did nothing.
 $cashback = intval(getPaySettingValue('chashbackiranpay4', '0'));
-if ($cashback > 0) {
-    $buyer = select("user", "*", "id", $payment['id_user'], "select");
-    if ($buyer) {
-        $reward = intval($price * $cashback / 100);
-        if ($reward > 0) {
-            update("user", "Balance", intval($buyer['Balance']) + $reward, "id", $payment['id_user']);
-        }
+if ($cashback > 0 && $buyer) {
+    $reward = intval($price * $cashback / 100);
+    if ($reward > 0) {
+        update("user", "Balance", intval($buyer['Balance']) + $reward, "id", $payment['id_user']);
+        sendmessage(
+            $buyer['id'],
+            sprintf($textbotlang['paymentGateway']['giftReport'], number_format($reward)),
+            null,
+            'HTML'
+        );
     }
+}
+
+if ($buyer && strlen((string) ($setting['Channel_Report'] ?? '')) > 0) {
+    $paymentreports = select("topicid", "idreport", "report", "paymentreport", "select")['idreport'];
+    telegram('sendmessage', [
+        'chat_id' => $setting['Channel_Report'],
+        'message_thread_id' => $paymentreports,
+        'text' => sprintf(
+            $textbotlang['paymentGateway']['reportAbanGateway'],
+            $buyer['username'],
+            $buyer['id'],
+            number_format($price)
+        ),
+        'parse_mode' => 'HTML',
+    ]);
 }
 
 iranpay4_finish(true, $successTitle, 'پرداخت شما با موفقیت انجام شد.');
