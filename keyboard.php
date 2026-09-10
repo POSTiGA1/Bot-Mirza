@@ -1078,14 +1078,6 @@ $affiliates = json_encode([
     ],
     'resize_keyboard' => true
 ]);
-$keyboardexportdata = json_encode([
-    'keyboard' => [
-        [['text' => $textbotlang['keyboard']['exportUsers']], ['text' => $textbotlang['keyboard']['exportOrders']]],
-        [['text' => $textbotlang['keyboard']['exportPayments']]],
-        [['text' => $textbotlang['Admin']['backAdminBtn']], ['text' => $textbotlang['Admin']['backMenuBtn']]]
-    ],
-    'resize_keyboard' => true
-]);
 $helpedit = json_encode([
     'keyboard' => [
         [['text' => $textbotlang['keyboard']['editName']], ['text' => $textbotlang['keyboard']['editDescription']]],

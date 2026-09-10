@@ -1348,22 +1348,6 @@ elseif ($datain == "systemsms") {
     }
     sendmessage($from_id, $textbotlang['Admin']['manageUser']['messageSent'], $keyboardadmin, 'HTML');
     step('home', $from_id);
-} elseif ($text == $textbotlang['Admin']['messageBulk']['btnForwardToUser']) {
-    sendmessage($from_id, $textbotlang['Admin']['manageUser']['getText'], $backadmin, 'HTML');
-    step('getmessageforward', $from_id);
-} elseif ($user['step'] == "getmessageforward") {
-    savedata("clear", "messageid", $message_id);
-    sendmessage($from_id, $textbotlang['Admin']['manageUser']['getIdMessage'], $backadmin, 'HTML');
-    step('getbtnresponseforward', $from_id);
-} elseif ($user['step'] == "getbtnresponseforward") {
-    $userdata = json_decode($user['Processing_value'], true);
-    if (!ctype_digit($text)) {
-        sendmessage($from_id, $textbotlang['common']['invalidInput'], $backadmin, 'HTML');
-        return;
-    }
-    forwardMessage($from_id, $userdata['messageid'], $text);
-    sendmessage($from_id, $textbotlang['Admin']['manageUser']['messageSent'], $keyboardadmin, 'HTML');
-    step('home', $from_id);
 } elseif ($text == $textbotlang['keyboard']['educationSection'] && $adminrulecheck['rule'] == "administrator") {
     sendmessage($from_id, $textbotlang['users']['selectoption'], $keyboardhelpadmin, 'HTML');
 } elseif ($text == $textbotlang['keyboard']['addEducation'] && $adminrulecheck['rule'] == "administrator") {
@@ -3122,44 +3106,6 @@ elseif ($datain == "systemsms") {
         file_put_contents("cronbot/users.json", json_encode($Balance_user));
         file_put_contents('cronbot/info', $data);
     }
-} elseif ($text == $textbotlang['Admin']['Balance']['btnDecrease']) {
-    sendmessage($from_id, $textbotlang['Admin']['Balance']['negativeBalance'], $backadmin, 'HTML');
-    step('Negative_Balance', $from_id);
-} elseif ($user['step'] == "Negative_Balance") {
-    if (!rowExists("user", "id", $text)) {
-        sendmessage($from_id, $textbotlang['Admin']['notUser'], $backadmin, 'HTML');
-        return;
-    }
-    sendmessage($from_id, $textbotlang['Admin']['Balance']['priceBalance'], $backadmin, 'HTML');
-    update("user", "Processing_value", $text, "id", $from_id);
-    step('get_price_Negative', $from_id);
-} elseif ($user['step'] == "get_price_Negative") {
-    if (!ctype_digit($text)) {
-        sendmessage($from_id, $textbotlang['Admin']['Balance']['invalidPrice'], $backadmin, 'HTML');
-        return;
-    }
-    if (intval($text) >= 100000000) {
-        sendmessage($from_id, $textbotlang['Admin']['Balance']['maxAmountRial'], $backadmin, 'HTML');
-        return;
-    }
-    sendmessage($from_id, $textbotlang['Admin']['Balance']['negativeBalanceUser'], $keyboardadmin, 'HTML');
-    $Balance_usersa = select("user", "*", "id", $user['Processing_value'], "select");
-    $Balance_Low_userkam = $Balance_usersa['Balance'] - $text;
-    update("user", "Balance", $Balance_Low_userkam, "id", $user['Processing_value']);
-    $balances1 = number_format($text, 0);
-    $Balance_user_afters = number_format(select("user", "*", "id", $user['Processing_value'], "select")['Balance']);
-    $textkam = sprintf($textbotlang['users']['Balance']['deductedNotice'], $balances1);
-    sendmessage($user['Processing_value'], $textkam, null, 'HTML');
-    step('home', $from_id);
-    if (strlen($setting['Channel_Report']) > 0) {
-        $textaddbalance = sprintf($textbotlang['Admin']['reportgroup']['balanceDecreased'], $username, $from_id, $user['Processing_value'], $text, $Balance_user_afters);
-        telegram('sendmessage', [
-            'chat_id' => $setting['Channel_Report'],
-            'message_thread_id' => $paymentreports,
-            'text' => $textaddbalance,
-            'parse_mode' => "HTML"
-        ]);
-    }
 } elseif ($datain == "searchuser") {
     sendmessage($from_id, $textbotlang['Admin']['manageUser']['getIdUserUnblock'], $backadmin, 'HTML');
     step('show_info', $from_id);
@@ -3355,19 +3301,6 @@ elseif ($datain == "systemsms") {
     $stmt->bindParam(':code', $text, PDO::PARAM_STR);
     $stmt->execute();
     sendmessage($from_id, $textbotlang['Admin']['Discount']['removedCode'], $shopkeyboard, 'HTML');
-    step('home', $from_id);
-} elseif ($text == $textbotlang['Admin']['Protocol']['btnDelete'] && $adminrulecheck['rule'] == "administrator") {
-    sendmessage($from_id, $textbotlang['Admin']['Protocol']['removeProtocol'], $keyboardprotocollist, 'HTML');
-    step('removeprotocol', $from_id);
-} elseif ($user['step'] == "removeprotocol") {
-    if (!in_array($text, $protocoldata)) {
-        sendmessage($from_id, $textbotlang['Admin']['Protocol']['invalidProtocol'], null, 'HTML');
-        return;
-    }
-    sendmessage($from_id, $textbotlang['Admin']['Protocol']['removedProtocol'], $optionMarzban, 'HTML');
-    $stmt = $pdo->prepare("DELETE FROM protocol WHERE NameProtocol = :protocol");
-    $stmt->bindParam(':protocol', $text, PDO::PARAM_STR);
-    $stmt->execute();
     step('home', $from_id);
 } elseif ($text == $textbotlang['keyboard']['usernameMethod'] && $adminrulecheck['rule'] == "administrator") {
     $text_username = $textbotlang['Admin']['algorithmUsername']['selectMethod'];
@@ -3830,15 +3763,6 @@ elseif ($datain == "systemsms") {
     outtypepanel($typepanel['type'], $textbotlang['Admin']['managepanel']['changedUsernamePanel']);
     update("marzban_panel", "username_panel", $text, "name_panel", $user['Processing_value']);
     update("marzban_panel", "datelogin", null, "name_panel", $user['Processing_value']);
-    step('home', $from_id);
-} elseif ($text == $textbotlang['Admin']['Protocol']['btnSettings'] && $adminrulecheck['rule'] == "administrator") {
-    sendmessage($from_id, $textbotlang['Admin']['managepanel']['Inbound']['getProtocol'], $keyboardprotocol, 'HTML');
-    step('getprotocolx_ui', $from_id);
-} elseif ($user['step'] == "getprotocolx_ui") {
-    $typepanel = select("marzban_panel", "*", "name_panel", $user['Processing_value'], "select");
-    outtypepanel($typepanel['type'], $textbotlang['Admin']['managepanel']['setProtocol']);
-    $marzbanprotocol = select("marzban_panel", "*", "name_panel", $user['Processing_value'], "select");
-    update("x_ui", "protocol", $text, "codepanel", $marzbanprotocol['code_panel']);
     step('home', $from_id);
 } elseif ($text == $textbotlang['keyboard']['editPassword'] && $adminrulecheck['rule'] == "administrator") {
     sendmessage($from_id, $textbotlang['Admin']['managepanel']['getPasswordNew'], $backadmin, 'HTML');
@@ -5728,112 +5652,6 @@ elseif ($datain == "systemsms") {
         ]
     ]);
     Editmessagetext($from_id, $message_id, $textbotlang['Admin']['Status']['botTitle'], $Bot_Status);
-} elseif ($text == $textbotlang['Admin']['report']['btnExport'] && $adminrulecheck['rule'] == "administrator") {
-    sendmessage($from_id, $textbotlang['users']['selectoption'], $keyboardexportdata, 'HTML');
-} elseif ($text == $textbotlang['Admin']['cronjob']['btnSettings'] && $adminrulecheck['rule'] == "administrator") {
-    sendmessage($from_id, $textbotlang['users']['selectoption'], $setting_panel, 'HTML');
-} elseif ($text == $textbotlang['keyboard']['exportUsers'] && $adminrulecheck['rule'] == "administrator") {
-    $counttable = select("user", "*", null, null, "count");
-    if ($counttable == 0) {
-        sendmessage($from_id, $textbotlang['Admin']['report']['noDataToExport'], null, 'HTML');
-        return;
-    }
-    $spreadsheet = new Spreadsheet();
-    $sheet = $spreadsheet->getActiveSheet();
-
-    $sql = "SELECT * FROM user";
-    $result = $pdo->query($sql);
-
-    $col = 1;
-    $headers = array_keys($result->fetch(PDO::FETCH_ASSOC));
-    foreach ($headers as $header) {
-        $sheet->setCellValue([$col, 1], $header);
-        $col++;
-    }
-
-    $row = 2;
-    while ($row_data = $result->fetch(PDO::FETCH_ASSOC)) {
-        $col = 1;
-        foreach ($row_data as $value) {
-            $sheet->setCellValue([$col, $row], $value);
-            $col++;
-        }
-        $row++;
-    }
-    $date = date("Y-m-d");
-    $filename = "users_{$date}.xlsx";
-    $writer = new Xlsx($spreadsheet);
-    $writer->save($filename);
-    sendDocument($from_id, $filename, $textbotlang['Admin']['report']['btnExportUsers']);
-    unlink($filename);
-} elseif ($text == $textbotlang['keyboard']['exportOrders'] && $adminrulecheck['rule'] == "administrator") {
-    $counttable = select("invoice", "*", null, null, "count");
-    if ($counttable == 0) {
-        sendmessage($from_id, $textbotlang['Admin']['report']['noDataToExport'], null, 'HTML');
-        return;
-    }
-    $spreadsheet = new Spreadsheet();
-    $sheet = $spreadsheet->getActiveSheet();
-
-    $sql = "SELECT * FROM invoice";
-    $result = $pdo->query($sql);
-
-    $col = 1;
-    $headers = array_keys($result->fetch(PDO::FETCH_ASSOC));
-    foreach ($headers as $header) {
-        $sheet->setCellValue([$col, 1], $header);
-        $col++;
-    }
-
-    $row = 2;
-    while ($row_data = $result->fetch(PDO::FETCH_ASSOC)) {
-        $col = 1;
-        foreach ($row_data as $value) {
-            $sheet->setCellValue([$col, $row], $value);
-            $col++;
-        }
-        $row++;
-    }
-    $date = date("Y-m-d");
-    $filename = "invoice_{$date}.xlsx";
-    $writer = new Xlsx($spreadsheet);
-    $writer->save($filename);
-    sendDocument($from_id, $filename, $textbotlang['Admin']['report']['btnExportOrders']);
-    unlink($filename);
-} elseif ($text == $textbotlang['keyboard']['exportPayments'] && $adminrulecheck['rule'] == "administrator") {
-    $counttable = select("Payment_report", "*", null, null, "count");
-    if ($counttable == 0) {
-        sendmessage($from_id, $textbotlang['Admin']['report']['noDataToExport'], null, 'HTML');
-        return;
-    }
-    $spreadsheet = new Spreadsheet();
-    $sheet = $spreadsheet->getActiveSheet();
-
-    $sql = "SELECT * FROM Payment_report";
-    $result = $pdo->query($sql);
-
-    $col = 1;
-    $headers = array_keys($result->fetch(PDO::FETCH_ASSOC));
-    foreach ($headers as $header) {
-        $sheet->setCellValue([$col, 1], $header);
-        $col++;
-    }
-
-    $row = 2;
-    while ($row_data = $result->fetch(PDO::FETCH_ASSOC)) {
-        $col = 1;
-        foreach ($row_data as $value) {
-            $sheet->setCellValue([$col, $row], $value);
-            $col++;
-        }
-        $row++;
-    }
-    $date = date("Y-m-d");
-    $filename = "Payment_report_{$date}.xlsx";
-    $writer = new Xlsx($spreadsheet);
-    $writer->save($filename);
-    sendDocument($from_id, $filename, $textbotlang['Admin']['report']['btnExportPayments']);
-    unlink($filename);
 } elseif (preg_match('/rejectremoceserviceadmin-(\w+)/', $datain, $dataget)) {
     $id_invoice = $dataget[1];
     $invoice = select("invoice", "*", "id_invoice", $id_invoice, "select");
@@ -8157,40 +7975,6 @@ if ($datain == "settimecornremove" && $adminrulecheck['rule'] == "administrator"
     }
     step('home', $from_id);
     sendmessage($from_id, $textbotlang['Admin']['Help']['tutorialSaved'], $nowpayment_setting_keyboard, 'HTML');
-} elseif ($text == $textbotlang['Admin']['gateway']['btnPerfectMoneyHelp'] && $adminrulecheck['rule'] == "administrator") {
-    sendmessage($from_id, $textbotlang['Admin']['Help']['askTutorialMedia'], $backadmin, 'HTML');
-    step("gethelpperfect", $from_id);
-} elseif ($user['step'] == "gethelpperfect") {
-    if ($text) {
-        if (intval($text) == 2) {
-            update("PaySetting", "ValuePay", "0", "NamePay", "helpperfectmony");
-        } else {
-            $data = json_encode(array(
-                'type' => "text",
-                'text' => $text
-            ));
-            update("PaySetting", "ValuePay", $data, "NamePay", "helpperfectmony");
-        }
-    } elseif ($photo) {
-        $data = json_encode(array(
-            'type' => "photo",
-            'text' => $caption,
-            'photoid' => $photoid
-        ));
-        update("PaySetting", "ValuePay", $data, "NamePay", "helpperfectmony");
-    } elseif ($video) {
-        $data = json_encode(array(
-            'type' => "video",
-            'text' => $caption,
-            'videoid' => $videoid
-        ));
-        update("PaySetting", "ValuePay", $data, "NamePay", "helpperfectmony");
-    } else {
-        sendmessage($from_id, $textbotlang['Admin']['Help']['invalidContent'], $backadmin, 'HTML');
-        return;
-    }
-    step('home', $from_id);
-    sendmessage($from_id, $textbotlang['Admin']['Help']['tutorialSaved'], $CartManage, 'HTML');
 } elseif ($text == $textbotlang['keyboard']['setEducationPlisio'] && $adminrulecheck['rule'] == "administrator") {
     sendmessage($from_id, $textbotlang['Admin']['Help']['askTutorialMedia'], $backadmin, 'HTML');
     step("gethelpplisio", $from_id);
@@ -8515,11 +8299,9 @@ if ($datain == "settimecornremove" && $adminrulecheck['rule'] == "administrator"
         sendmessage($from_id, $textbotlang['Admin']['managepanel']['qrBackgroundSaved'], $setting_panel, 'HTML');
         step("home", $from_id);
     }
-} elseif ($text == $textbotlang['keyboard']['setProtocolInbound'] || $text == $textbotlang['Admin']['managepanel']['btnSetGroupName'] || $text == $textbotlang['Admin']['node']['btnSettings']) {
+} elseif ($text == $textbotlang['keyboard']['setProtocolInbound'] || $text == $textbotlang['Admin']['managepanel']['btnSetGroupName']) {
     if ($text == $textbotlang['Admin']['managepanel']['btnSetGroupName']) {
         $textsetprotocol = $textbotlang['Admin']['managepanel']['askGroupName'];
-    } elseif ($text == $textbotlang['Admin']['node']['btnSettings']) {
-        $textsetprotocol = $textbotlang['Admin']['node']['askSetup'];
     } else {
         $textsetprotocol = $textbotlang['Admin']['managepanel']['askProtocolSetup'];
     }
