@@ -10,6 +10,77 @@ $domainhostsEscaped = htmlspecialchars($domainhosts, ENT_QUOTES | ENT_SUBSTITUTE
 
 $miniAppInstructionText = sprintf($textbotlang['Admin']['webpanel']['miniAppHelp'], $domainhostsEscaped);
 
+$backmenu_panel_steps = [
+    "GetNameNew", "GeturlNew", "GeturlNewx", "GetusernameNew", "GetpaawordNew", "getagentpanel",
+    "getuuidadmin", "getlimitnew", "updatetime", "val_usertest", "getinboundiid", "confirmremovepanel",
+    "updatemethodusername", "getnamecustom", "updateextendmethod", "setpricechangelocation",
+    "GetPriceExtra", "gettypeextra", "GetPricecustomvo", "gettypeextracustom",
+    "GetPricetimeextra", "gettypeextratime", "GetPriceExtratime", "gettypeextratimecustom",
+    "GetmaineExtra", "gettypeextramain", "GetmaxeExtra", "gettypeextramax",
+    "Getmaintime", "gettypeextramaintime", "Getmaxtime", "gettypeextramaxtime",
+    "getuserhide", "getuserhideforremove", "getprotocoldisable", "getInbounddisable",
+    "getservceid", "setinboundandprotocol"
+];
+$backmenu_panelfeature_steps = [
+    "getusernameconfigcr", "getcountcreate", "getvolumesconfig", "gettimeaccount",
+    "getusage_coefficient", "getnamenode", "getipnodeset"
+];
+$backmenu_menus = [];
+$backmenu_register = function (array $steps, $keyboard) use (&$backmenu_menus) {
+    foreach ($steps as $stepname) {
+        $backmenu_menus[$stepname] = $keyboard;
+    }
+};
+$backmenu_register(["addchannel", "getremark", "getlinkjoin", "removechannel"], $channelkeyboard);
+$backmenu_register(["add_name_help", "getcatgoryhelp", "add_dec", "remove_help", "getnameforedite"], $keyboardhelpadmin);
+$backmenu_register(["changenamehelp", "changecategoryhelp", "changedeshelp", "changemedia"], $helpedit);
+$backmenu_register([
+    "get_code", "get_price_code", "getlimitcodedis",
+    "get_codesell", "get_price_codesell", "getlimitcode", "gettypecodeagent", "gettimediscount",
+    "getfirstdiscount", "getuseuser", "getlocdiscount", "getproductdiscount",
+    "minbalancebulk", "getpricecashback", "getagent"
+], $shopkeyboard);
+$backmenu_register([
+    "get_limit", "get_agent", "get_location", "getcategory", "get_time", "get_price",
+    "gettimereset", "getnote", "endstep", "selectloc",
+    "getaddpricepeoduct", "getaddpricepeoductloc", "getagentaddpriceproduct",
+    "getkampricepeoduct", "getkampricepeoductloc", "getlowpricepeoductloc"
+], $keyboard_shop_manage);
+$backmenu_register(["get_name_new_category", "getremarkcategory", "removecategory", "editcategory_name"], $keyboard_Category_manage);
+$backmenu_register([
+    "change_price", "change_note", "change_categroy", "change_name", "change_type_agent",
+    "change_reset_data", "change_loc_data", "change_val", "change_time",
+    "getdatainboundproduct", "getlistpanel"
+], $change_product);
+$backmenu_register([
+    "CartDirect", "changecard", "getnamecard", "getcardremove", "showcardallusers",
+    "getcashcart", "gethelpcart", "getlistidcart", "getmaincart", "getmaxcart", "gettimeauto"
+], $CartManage);
+$backmenu_register(["getidExceptio", "getidExceptioremove"], $Exception_auto_cart_keyboard);
+$backmenu_register(["apiternado", "getcashiranpay2", "getfeeiranpay2", "getmaaxiranpay2", "getmainiranpay2", "helpiranpay2"], $trnado);
+$backmenu_register(["merchant_zarinpal", "getcashzarinpal", "getmaaxzarinpal", "getmainaqzarinpal", "helpzarinpal"], $keyboardzarinpal);
+$backmenu_register(["merchant_id_aqayepardakht", "getcashahaypar", "getmaaxaqayepardakht", "getmainaqayepardakht", "helpaqayepardakht"], $aqayepardakht);
+$backmenu_register(["apinowpayment", "getcashplisio", "gethelpplisio", "getmainplisio", "getmaxplisio"], $NowPaymentsManage);
+$backmenu_register(["marchent_tronseller", "getcashnowpayment", "gethelpnowpayment", "getmainaqnowpayment", "maxbalancenowpayment"], $nowpayment_setting_keyboard);
+$backmenu_register(["marchent_floypay", "getcashiranpay1", "gethelpiranpay1", "getmaaxiranpay1", "getmainiranpay1"], $Swapinokey);
+$backmenu_register(["apiiranpay", "helpiranpay3", "maxbalanceiranpay", "minbalanceiranpay"], $iranpaykeyboard);
+$backmenu_register(["apiiranpay4", "endpointiranpay4", "getcashiranpay4", "getmaaxiranpay4", "getmainiranpay4", "helpiranpay4"], $abangatewaykeyboard);
+$backmenu_register(["getmaindigitaltron", "getmaxdigitaltron", "helpofflinearze"], $tronnowpayments);
+$backmenu_register(["chashbackstar", "gethelpstar", "getmainaqstar", "maxbalancestar"], $Startelegram);
+$backmenu_register([
+    "addchannelid", "limit_usertest_allusers", "getimagebackgroundqr", "getpricereqagent",
+    "getcronvolumere", "on_hold_day", "getdaycron", "getvolumewarn", "getdaywarn"
+], $setting_panel);
+$backmenu_register(["getdiscont", "setbanner", "setpercentage"], $affiliates);
+$backmenu_register(["idsupportset", "getidadmindep", "getdeparteman", "getremovedep"], $supportcenter);
+$backmenu_register(["getnameproduct", "getconfigtext", "getnameremove", "getnameedit"], $optionManualsale);
+$backmenu_register(["getcontentedit"], $configedit);
+$backmenu_register(["limitchangeall", "limitfreechangefree"], $keyboardchangelimit);
+$backmenu_register(["getnamebtnapp", "geturlbtnapp", "edit_app", "get_new_lin_app", "getnameappforremove"], $keyboardlinkapp);
+$backmenu_register(["getonelotary", "getonelotary2", "getonelotary3"], $lottery);
+$backmenu_register(["getpricewheel"], $wheelkeyboard);
+$backmenu_register(["add_name_panel", "add_link_panel", "add_username_panel", "add_password_panel", "getlimitedpanel"], $keyboardtypepanel);
+
 if (in_array($text, $textadmin) || $datain == "admin") {
     if ($datain == "admin")
         deletemessage($from_id, $message_id);
@@ -58,14 +129,22 @@ if (in_array($text, $textadmin) || $datain == "admin") {
         sendmessage($from_id, $textbotlang['Admin']['activeBotText'], $setting_panel, 'HTML');
         return;
     }
+    $backmenu_step = (string) $user['step'];
     step('home', $from_id);
-    if (in_array($user['step'], ["updatetime", "val_usertest", "getlimitnew", "GetusernameNew", "GeturlNew", "protocolset", "updatemethodusername", "GetNameNew", "getprotocol", "getprotocolremove", "GetpaawordNew", "updateextendmethod", "setpricechangelocation"])) {
-        $typepanel = select("marzban_panel", "*", "name_panel", $user['Processing_value'], "select");
-        outtypepanel($typepanel['type'], $textbotlang['Admin']['backMenu']);
-    } elseif (in_array($user['step'], ["selectloc", "get_limit", "selectlocedite", "GetPriceExtra", "GetPriceexstratime", "GetPricecustomtime", "GetPricecustomvolume", "get_code", "get_codesell", "minbalancebulk"])) {
-        sendmessage($from_id, $textbotlang['Admin']['backMenu'], $shopkeyboard, 'HTML');
-    } elseif (in_array($user['step'], ["addchannel", "removechannel"])) {
-        sendmessage($from_id, $textbotlang['Admin']['backMenu'], $channelkeyboard, 'HTML');
+    if (in_array($backmenu_step, $backmenu_panel_steps, true) || in_array($backmenu_step, $backmenu_panelfeature_steps, true)) {
+        $backmenu_panel = select("marzban_panel", "*", "name_panel", $user['Processing_value'], "select");
+        $backmenu_paneltype = is_array($backmenu_panel) ? (string) $backmenu_panel['type'] : '';
+        if ($backmenu_paneltype === '') {
+            sendmessage($from_id, $textbotlang['Admin']['backAdmin'], $keyboardadmin, 'HTML');
+        } elseif (in_array($backmenu_step, $backmenu_panelfeature_steps, true)) {
+            sendmessage($from_id, $textbotlang['Admin']['backMenu'], $backmenu_paneltype == "marzban" ? $optionathmarzban : $optionathx_ui, 'HTML');
+        } elseif ($backmenu_paneltype == "Manualsale") {
+            sendmessage($from_id, $textbotlang['Admin']['backMenu'], $optionManualsale, 'HTML');
+        } else {
+            outtypepanel($backmenu_paneltype, $textbotlang['Admin']['backMenu']);
+        }
+    } elseif (isset($backmenu_menus[$backmenu_step])) {
+        sendmessage($from_id, $textbotlang['Admin']['backMenu'], $backmenu_menus[$backmenu_step], 'HTML');
     } else {
         sendmessage($from_id, $textbotlang['Admin']['backAdmin'], $keyboardadmin, 'HTML');
     }
