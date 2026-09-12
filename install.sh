@@ -1534,6 +1534,12 @@ purge_installer_dir() {
     return 0
 }
 
+move_extracted_files() {
+    local src="$1" dest="$2"
+    [ -d "$src" ] && [ -d "$dest" ] || return 1
+    find "$src" -mindepth 1 -maxdepth 1 -exec mv -f -t "$dest/" {} +
+}
+
 # vpnbot instance dirs (not Default/update). update_bot wipes BOT_DIR.
 VPNBOT_BACKUP="/tmp/mirza_vpnbot_backup"
 
@@ -1911,7 +1917,7 @@ function install_bot() {
             install_pause "Locating extracted files"
         fi
         purge_installer_dir "$EXTRACTED_DIR"
-        mv "$EXTRACTED_DIR"/* "$BOT_DIR" || {
+        move_extracted_files "$EXTRACTED_DIR" "$BOT_DIR" || {
             echo -e "\e[91mError: Failed to move extracted files.\033[0m"
             install_pause "Moving bot files"
         }
@@ -2368,7 +2374,7 @@ function update_bot() {
     sudo mkdir -p "$BOT_DIR"
     purge_installer_dir "$EXTRACTED_DIR"
     purge_installer_dir "$BOT_DIR"
-    sudo mv "$EXTRACTED_DIR"/* "$BOT_DIR/" || {
+    move_extracted_files "$EXTRACTED_DIR" "$BOT_DIR" || {
         echo -e "\e[91mFile transfer failed!\033[0m"
         echo -e "\e[93mvpnbot backup: ${VPNBOT_BACKUP}\033[0m"
         exit 1
@@ -2713,7 +2719,7 @@ function migrate_to_pro() {
         rm -rf "$TEMP_DIR"; exit 1
     fi
     purge_installer_dir "$EXTRACTED_DIR"
-    mv "$EXTRACTED_DIR"/* "$NEW_BOT_DIR"
+    move_extracted_files "$EXTRACTED_DIR" "$NEW_BOT_DIR"
     purge_installer_dir "$NEW_BOT_DIR"
     rm -rf "$TEMP_DIR"
     NEW_SECRET_TOKEN=$(openssl rand -base64 10 | tr -dc 'a-zA-Z0-9' | cut -c1-8)
