@@ -574,6 +574,9 @@ function cronStatusMenu()
     }
     $text = $labels['title'] . "\n\n" . ($dispatcherRunning ? $labels['running'] : $labels['stopped']) . "\n";
     $text .= sprintf($labels['lastRun'], isset($cronStatus['dispatcher']) ? $timeAgo($cronStatus['dispatcher']) : $labels['never']) . "\n\n";
+    if (isset($cronStatus['pdo_mysql']) && !$cronStatus['pdo_mysql']) {
+        $text .= sprintf($labels['missingMysql'], htmlspecialchars((string) $cronStatus['php_cli'])) . "\n\n";
+    }
     $text .= implode("\n", $lines);
     if (!$dispatcherRunning) {
         $text .= "\n\n" . sprintf($labels['command'], htmlspecialchars(mirza_cron_dispatcher_command((string) $domainhosts)));

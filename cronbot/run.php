@@ -23,9 +23,11 @@ $scorestatus = null;
 $cronStatusFile = dirname($cronbotDir) . '/storage/cron_status.json';
 $cronStatus = json_decode((string) @file_get_contents($cronStatusFile), true) ?: [];
 $cronStatus['dispatcher'] = time();
+$cronStatus['php_cli'] = PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION;
+$cronStatus['pdo_mysql'] = extension_loaded('pdo_mysql');
 
 try {
-    foreach (mirza_cron_jobs() as $job) {
+    foreach ($cronStatus['pdo_mysql'] ? mirza_cron_jobs() : [] as $job) {
         $script = $cronbotDir . '/' . $job['job'] . '.php';
         if (!is_file($script)) {
             continue;

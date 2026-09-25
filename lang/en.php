@@ -1216,6 +1216,7 @@ Message text:
                         'minutesAgo' => "%s min ago",
                         'disabled' => "off",
                         'command' => "📌 To set it up manually, add this line to the server crontab:\n<code>%s</code>",
+                        'missingMysql' => "❌ The MySQL extension is not installed for command-line PHP %1\$s, so cron jobs cannot connect to the database.\nRun on the server:\n<code>apt install php%1\$s-mysql</code>",
                         'refresh' => "🔄 Refresh",
                         'fix' => "🔧 Reinstall cron",
                         'fixed' => "✅ Cron was reinstalled.",
